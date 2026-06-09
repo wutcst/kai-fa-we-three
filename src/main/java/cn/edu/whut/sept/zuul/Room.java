@@ -43,6 +43,9 @@ public class Room
     {
         return exits.get(direction);
     }
+    // 预留给成员B的接口：向房间添加或移除物品
+    public void addItem(Item item) { }
+    public Item removeItem(String itemName) { return null; }
 }
 
 

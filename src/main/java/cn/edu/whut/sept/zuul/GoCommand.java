@@ -2,23 +2,25 @@ package cn.edu.whut.sept.zuul;
 
 public class GoCommand extends Command
 {
+    @Override
     public boolean execute(Game game)
     {
         if(!hasSecondWord()) {
-            System.out.println("Go where?");
+            System.out.println("go where?");
+            return false;
         }
 
-        String direction = getSecondWord();
-        Room currentRoom = game.getCurrentRoom();
+        String dir = getSecondWord();
+        Room nextRoom = game.getCurrentRoom().getExit(dir);
 
-        Room nextRoom = game.getCurrentRoom().getExit(direction);
+        if(nextRoom == null) {
+            System.out.println("No way!");
+        } else {
+            // 保存当前房间到历史
+            game.pushCurrentRoomToHistory();
 
-        if (nextRoom == null) {
-            System.out.println("There is no door!");
-        }
-        else {
             game.setCurrentRoom(nextRoom);
-            System.out.println(nextRoom.getLongDescription());
+            System.out.println(game.getCurrentRoom().getLongDescription());
         }
 
         return false;

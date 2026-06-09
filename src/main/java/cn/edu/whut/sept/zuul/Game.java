@@ -1,63 +1,51 @@
-/**
- * 该类是“World-of-Zuul”应用程序的主类。
- * 《World of Zuul》是一款简单的文本冒险游戏。用户可以在一些房间组成的迷宫中探险。
- * 你们可以通过扩展该游戏的功能使它更有趣!.
- *
- * 如果想开始执行这个游戏，用户需要创建Game类的一个实例并调用“play”方法。
- *
- * Game类的实例将创建并初始化所有其他类:它创建所有房间，并将它们连接成迷宫；它创建解析器
- * 接收用户输入，并将用户输入转换成命令后开始运行游戏。
- *
- * @author  Michael Kölling and David J. Barnes
- * @version 1.0
- */
 package cn.edu.whut.sept.zuul;
+
+// 1. 必须导入 Stack
+import java.util.Stack;
 
 public class Game
 {
     private Parser parser;
     private Room currentRoom;
 
+    // 2. 添加栈，用来记录走过的房间
+    private Stack<Room> roomHistory;
+
     public Game()
     {
         createRooms();
         parser = new Parser();
+
+        // 3. 初始化栈
+        roomHistory = new Stack<>();
     }
 
     private void createRooms()
     {
         Room outside, theater, pub, lab, office;
 
-        // create the rooms
         outside = new Room("outside the main entrance of the university");
         theater = new Room("in a lecture theater");
         pub = new Room("in the campus pub");
         lab = new Room("in a computing lab");
         office = new Room("in the computing admin office");
 
-        // initialise room exits
         outside.setExit("east", theater);
         outside.setExit("south", lab);
         outside.setExit("west", pub);
 
         theater.setExit("west", outside);
-
         pub.setExit("east", outside);
-
         lab.setExit("north", outside);
         lab.setExit("east", office);
-
         office.setExit("west", lab);
 
-        currentRoom = outside;  // start game outside
+        currentRoom = outside;
     }
 
     public void play()
     {
         printWelcome();
-
-        // Enter the main command loop.  Here we repeatedly read commands and
-        // execute them until the game is over.
 
         boolean finished = false;
         while (! finished) {
@@ -68,7 +56,6 @@ public class Game
                 finished = command.execute(this);
             }
         }
-
         System.out.println("Thank you for playing.  Good bye.");
     }
 
@@ -88,5 +75,29 @@ public class Game
 
     public void setCurrentRoom(Room room){
         this.currentRoom = room;
+    }
+
+
+    /*
+     * 实现 back 命令：回到上一个房间
+     */
+    public void back() {
+        // 如果栈为空，说明已经在起点
+        if (roomHistory.isEmpty()) {
+            System.out.println("你已经回到起点了，无法继续后退！");
+            return;
+        }
+
+        // 弹出上一个房间，并切换过去
+        currentRoom = roomHistory.pop();
+        System.out.println("你回到了上一个房间。");
+        System.out.println(currentRoom.getLongDescription());
+    }
+
+    /**
+     * 玩家移动时，把当前房间存入历史栈（给 GoCommand 调用）
+     */
+    public void pushCurrentRoomToHistory() {
+        roomHistory.push(currentRoom);
     }
 }

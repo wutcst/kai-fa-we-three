@@ -13,6 +13,9 @@
  */
 package cn.edu.whut.sept.zuul;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Game
 {
     private Parser parser;
@@ -27,6 +30,7 @@ public class Game
     private void createRooms()
     {
         Room outside, theater, pub, lab, office;
+        TeleportRoom teleport;
 
         // create the rooms
         outside = new Room("outside the main entrance of the university");
@@ -35,12 +39,23 @@ public class Game
         lab = new Room("in a computing lab");
         office = new Room("in the computing admin office");
 
+        List<Room> allRooms = new ArrayList<>();
+        allRooms.add(outside);
+        allRooms.add(theater);
+        allRooms.add(pub);
+        allRooms.add(lab);
+        allRooms.add(office);
+
+        teleport = new TeleportRoom("in a mysterious teleport chamber", allRooms);
+        allRooms.add(teleport);
+
         // initialise room exits
         outside.setExit("east", theater);
         outside.setExit("south", lab);
         outside.setExit("west", pub);
 
         theater.setExit("west", outside);
+        theater.setExit("north", teleport);
 
         pub.setExit("east", outside);
 

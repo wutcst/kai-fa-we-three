@@ -6,10 +6,15 @@ import java.util.List;
 public class Player {
     private String name;
     private Room currentRoom;
-    private int maxWeight;        // 最大负重上限
-    private int currentWeight;    // 当前背包总重量
-    private List<Item> inventory; // 随身物品集合 (背包)
+    private int maxWeight;          // 最大负重上限
+    private int currentWeight;      // 当前背包总重量
+    private List<Item> inventory;   // 随身物品集合 (背包)
 
+    /**
+     * 玩家构造函数
+     * @param name 玩家姓名
+     * @param maxWeight 玩家最大负重能力
+     */
     public Player(String name, int maxWeight) {
         this.name = name;
         this.maxWeight = maxWeight;
@@ -17,8 +22,10 @@ public class Player {
         this.inventory = new ArrayList<>();
     }
 
-    public void setCurrentRoom(Room room) { this.currentRoom = room; }
-    public Room getCurrentRoom() { return currentRoom; }
+    // ==========================================
+    // 基础 Getter 和 Setter
+    // ==========================================
+
     public String getName() {
         return name;
     }
@@ -26,34 +33,47 @@ public class Player {
     public void setName(String name) {
         this.name = name;
     }
-    // -----------------------
 
-    public void setCurrentRoom(Room room) { this.currentRoom = room; }
-    public Room getCurrentRoom() { return currentRoom; }
+    public Room getCurrentRoom() {
+        return currentRoom;
+    }
+
+    public void setCurrentRoom(Room room) {
+        this.currentRoom = room;
+    }
+
+    // ==========================================
+    // 核心业务逻辑 (严格遵循验收标准与接口约定)
+    // ==========================================
 
     /**
-     * 尝试拾取物品 (take)
-     * @return 拾取成功返回 true，超重返回 false
+     * 拾取物品
+     * 验收标准: 判断拾取新物件时是否超过负重上限，超重则返回失败状态
+     * @param item 要拾取的物品对象
+     * @return boolean 是否拾取成功
      */
     public boolean takeItem(Item item) {
         if (this.currentWeight + item.getWeight() > this.maxWeight) {
-            return false; // 超重，拒绝拾取
+            return false; // 超重，交由 Game 层处理打印提示
         }
-        inventory.add(item);
+
+        this.inventory.add(item);
         this.currentWeight += item.getWeight();
         return true;
     }
 
     /**
-     * 尝试丢弃物品 (drop)
-     * @return 如果背包有该物品，移除并返回对象；否则返回 null
+     * 丢弃物品
+     * 验收标准: 根据物品名称从随身集合中移除该物品
+     * @param itemName 要丢弃的物品名称
+     * @return Item 被丢弃的物品对象（如果背包里没有该物品，则返回 null）
      */
     public Item dropItem(String itemName) {
         for (int i = 0; i < inventory.size(); i++) {
             Item item = inventory.get(i);
             if (item.getDescription().equals(itemName)) {
                 inventory.remove(i);
-                this.currentWeight -= item.getWeight(); // 扣除重量
+                this.currentWeight -= item.getWeight();
                 return item;
             }
         }
@@ -61,55 +81,22 @@ public class Player {
     }
 
     /**
-     * 吃魔法饼干增加负重 (eat cookie)
-     * @return 吃成功返回 true，没找到返回 false
-     */
-    public boolean eatCookie(String itemName) {
-        for (int i = 0; i < inventory.size(); i++) {
-            Item item = inventory.get(i);
-            // 判断确实是我们要吃的那个物品，并且它带有 cookie 关键字
-            if (item.getDescription().equals(itemName) && itemName.contains("cookie")) {
-                inventory.remove(i); // 吃掉消耗
-                this.currentWeight -= item.getWeight(); // 减去饼干本身的重量
-                this.maxWeight += 20; // 永久增加 20 点负重上限
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 查看背包内容 (items)
+     * 查询背包当前状态
+     * 验收标准: 返回当前背包所有物品的详细信息和总重量
+     * @return String 背包信息的格式化字符串
      */
     public String getInventoryString() {
         if (inventory.isEmpty()) {
-            return "你的背包空空如也。（当前负重: " + currentWeight + " / " + maxWeight + "）";
+            return "你现在背包里空空如也。";
         }
-        StringBuilder returnString = new StringBuilder("你随身携带的物品有:\n");
+
+        StringBuilder returnString = new StringBuilder("你随身携带的物品:\n");
         for (Item item : inventory) {
-            returnString.append(" - ").append(item.getDescription())
+            returnString.append("  - ").append(item.getDescription())
                     .append(" (重量: ").append(item.getWeight()).append(")\n");
         }
-        returnString.append("当前总负重: ").append(currentWeight).append(" / ").append(maxWeight);
+        returnString.append("当前负重: ").append(currentWeight).append(" / ").append(maxWeight);
+
         return returnString.toString();
-    }
-
-    // --- 本地自测入口 ---
-    public static void main(String[] args) {
-        Player testPlayer = new Player("测试英雄", 50);
-        Item sword = new Item("sword", 30);
-        Item magicCookie = new Item("magic cookie", 5);
-
-        System.out.println("1. 初始状态：\n" + testPlayer.getInventoryString() + "\n");
-
-        System.out.println("2. 拾取长剑(30)和魔法饼干(5)：");
-        testPlayer.takeItem(sword);
-        testPlayer.takeItem(magicCookie);
-        System.out.println(testPlayer.getInventoryString() + "\n");
-
-        System.out.println("3. 尝试吃掉魔法饼干：");
-        boolean eatSuccess = testPlayer.eatCookie("magic cookie");
-        System.out.println("吃饼干是否成功: " + eatSuccess);
-        System.out.println(testPlayer.getInventoryString() + "\n");
     }
 }

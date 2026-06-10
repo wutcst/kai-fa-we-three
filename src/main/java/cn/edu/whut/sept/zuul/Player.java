@@ -19,6 +19,17 @@ public class Player {
 
     public void setCurrentRoom(Room room) { this.currentRoom = room; }
     public Room getCurrentRoom() { return currentRoom; }
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    // -----------------------
+
+    public void setCurrentRoom(Room room) { this.currentRoom = room; }
+    public Room getCurrentRoom() { return currentRoom; }
 
     /**
      * 尝试拾取物品 (take)

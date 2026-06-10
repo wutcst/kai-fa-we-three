@@ -99,4 +99,32 @@ public class Player {
 
         return returnString.toString();
     }
+
+    /**
+     * 吃掉物品的底层逻辑
+     * 验收标准: 判定魔法饼干、增加负重上限、并从背包移除
+     * @param itemName 要吃的物品名称
+     * @return boolean 是否成功吃掉并生效
+     */
+    public boolean eat(String itemName) {
+        // 1. 通过特定名称判定是否是魔法饼干 (我们这里规定名字为 "cookie")
+        if (itemName.equals("cookie")) {
+
+            // 2. 尝试从背包里移除它
+            // 这里体现了架构的优雅：直接复用 dropItem，它会自动帮我们把饼干从集合移除，并减去饼干自身的重量！
+            Item eatenCookie = dropItem(itemName);
+
+            if (eatenCookie != null) {
+                // 3. 成功从背包拿出并吃下，修改最大负重上限 (假设增加 10kg 上限)
+                this.maxWeight += 10;
+                return true; // 返回成功状态
+            } else {
+                // 饼干不在背包里 (不能吃空气)
+                return false;
+            }
+        }
+
+        // 如果想吃的不是饼干，直接返回失败（交由 Game 层去提示“这东西不能吃”）
+        return false;
+    }
 }

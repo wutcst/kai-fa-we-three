@@ -32,5 +32,19 @@ public class BagTest {
         // 6. 最终背包状态
         System.out.println("\n====== 最终背包状态 ======");
         System.out.println(player.getInventoryString());
+
+        // 7. 测试进阶任务：吃魔法饼干
+        System.out.println("\n====== 测试魔法饼干机制 ======");
+        // 创造一块 1kg 的魔法饼干并强行塞进背包
+        Item cookie = new Item("cookie", 1);
+        player.takeItem(cookie);
+        System.out.println("吃之前的状态：\n" + player.getInventoryString());
+
+        // 执行吃饼干动作
+        boolean eatResult = player.eat("cookie");
+        System.out.println("\n执行吃掉 cookie... 结果: " + eatResult);
+
+        // 验收饼干是否消失，以及负重上限是否从 10 变成了 20
+        System.out.println("吃完后的状态：\n" + player.getInventoryString());
     }
 }

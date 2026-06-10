@@ -1,8 +1,8 @@
 package cn.edu.whut.sept.zuul;
 
 public class Item {
-    private String description;
-    private int weight;
+    private String description; // 物品名称/描述 (如 "sword" 或 "magic cookie")
+    private int weight;         // 物品重量
 
     public Item(String description, int weight) {
         this.description = description;

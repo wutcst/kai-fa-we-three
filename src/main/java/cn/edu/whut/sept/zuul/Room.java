@@ -8,12 +8,14 @@ public class Room
     private String description;
     private HashMap<String, Room> exits;        // stores exits of this room.
     private HashMap<String, Item> items;        // stores items in this room.
+    private HashMap<String, NPC> npcs;        // stores NPCs in this room.
 
     public Room(String description)
     {
         this.description = description;
         exits = new HashMap<>();
         items = new HashMap<>();
+        npcs = new HashMap<>();
     }
 
     public void setExit(String direction, Room neighbor)
@@ -28,7 +30,8 @@ public class Room
 
     public String getLongDescription()
     {
-        return "You are " + description + ".\n" + getExitString() + "\n" + getItemsString();
+        return "You are " + description + ".\n" + getExitString() + "\n"
+                + getItemsString() + "\n" + getNPCsString();
     }
 
     private String getExitString()
@@ -54,6 +57,18 @@ public class Room
         return returnString.toString();
     }
 
+    private String getNPCsString()
+    {
+        if (npcs.isEmpty()) {
+            return "There is no one else here.";
+        }
+        StringBuilder returnString = new StringBuilder("People in this room:");
+        for (NPC npc : npcs.values()) {
+            returnString.append("\n - ").append(npc.getName());
+        }
+        return returnString.toString();
+    }
+
     public Room getExit(String direction)
     {
         return exits.get(direction);
@@ -66,6 +81,20 @@ public class Room
     public Item removeItem(String itemName)
     {
         return items.remove(itemName);
+    }
+
+    public void addNPC(NPC npc)
+    {
+        npcs.put(npc.getName(), npc);
+    }
+
+    public String getNPCDialogue(String npcName)
+    {
+        NPC npc = npcs.get(npcName);
+        if (npc == null) {
+            return null;
+        }
+        return npc.getDialogue();
     }
 }
 

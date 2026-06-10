@@ -64,6 +64,11 @@ public class Game
 
         office.setExit("west", lab);
 
+        pub.addNPC(new NPC("bartender",
+                "Welcome to the campus pub! Take a break from your adventure."));
+        office.addNPC(new NPC("admin",
+                "Please keep the computing lab tidy. Office hours are 9 to 5."));
+
         currentRoom = outside;  // start game outside
     }
 

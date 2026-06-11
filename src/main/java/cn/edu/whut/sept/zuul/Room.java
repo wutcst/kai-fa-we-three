@@ -1,51 +1,77 @@
 package cn.edu.whut.sept.zuul;
 
-import java.util.Set;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Room
 {
     private String description;
-    private HashMap<String, Room> exits;        // stores exits of this room.
+    private Map<String, Room> exits;
+    // 房间内物品集合
+    private List<Item> items;
 
-    public Room(String description)
+    public Room(String desc)
     {
-        this.description = description;
+        description = desc;
         exits = new HashMap<>();
+        items = new ArrayList<>();
     }
 
-    public void setExit(String direction, Room neighbor)
+    public void setExit(String dir, Room room)
     {
-        exits.put(direction, neighbor);
+        exits.put(dir, room);
     }
 
-    public String getShortDescription()
+    public Room getExit(String dir)
     {
-        return description;
+        return exits.get(dir);
     }
 
     public String getLongDescription()
     {
-        return "You are " + description + ".\n" + getExitString();
+        return "You are " + description + ".\n" + getExitString() + getRoomItemString();
     }
 
     private String getExitString()
     {
-        String returnString = "Exits:";
-        Set<String> keys = exits.keySet();
-        for(String exit : keys) {
-            returnString += " " + exit;
+        StringBuilder s = new StringBuilder("Exits:");
+        for(String key : exits.keySet()) {
+            s.append(" ").append(key);
         }
-        return returnString;
+        return s + "\n";
     }
 
-    public Room getExit(String direction)
-    {
-        return exits.get(direction);
+    // 拼接房间物品信息
+    private String getRoomItemString(){
+        if(items.isEmpty()){
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("Items here: ");
+        for(Item item : items){
+            sb.append(item.getDescription()).append("  ");
+        }
+        return sb + "\n";
     }
-    // 预留给成员B的接口：向房间添加或移除物品
-    public void addItem(Item item) { }
-    public Item removeItem(String itemName) { return null; }
+
+    // 根据名称获取物品
+    public Item getItem(String itemName){
+        for(Item item : items){
+            if(item.getDescription().equals(itemName)){
+                return item;
+            }
+        }
+        return null;
+    }
+
+    // 向房间添加物品
+    public void addItem(Item item){
+        items.add(item);
+    }
+
+    // 从房间移除物品
+    public void removeItem(Item item){
+        items.remove(item);
+    }
 }
-
-

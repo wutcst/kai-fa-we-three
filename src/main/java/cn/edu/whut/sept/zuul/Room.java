@@ -7,11 +7,15 @@ public class Room
 {
     private String description;
     private HashMap<String, Room> exits;        // stores exits of this room.
+    private HashMap<String, Item> items;        // stores items in this room.
+    private HashMap<String, NPC> npcs;        // stores NPCs in this room.
 
     public Room(String description)
     {
         this.description = description;
         exits = new HashMap<>();
+        items = new HashMap<>();
+        npcs = new HashMap<>();
     }
 
     public void setExit(String direction, Room neighbor)
@@ -26,7 +30,8 @@ public class Room
 
     public String getLongDescription()
     {
-        return "You are " + description + ".\n" + getExitString();
+        return "You are " + description + ".\n" + getExitString() + "\n"
+                + getItemsString() + "\n" + getNPCsString();
     }
 
     private String getExitString()
@@ -39,13 +44,58 @@ public class Room
         return returnString;
     }
 
+    private String getItemsString()
+    {
+        if (items.isEmpty()) {
+            return "There are no items here.";
+        }
+        StringBuilder returnString = new StringBuilder("Items in this room:");
+        for (Item item : items.values()) {
+            returnString.append("\n - ").append(item.getDescription())
+                    .append(" (重量: ").append(item.getWeight()).append(")");
+        }
+        return returnString.toString();
+    }
+
+    private String getNPCsString()
+    {
+        if (npcs.isEmpty()) {
+            return "There is no one else here.";
+        }
+        StringBuilder returnString = new StringBuilder("People in this room:");
+        for (NPC npc : npcs.values()) {
+            returnString.append("\n - ").append(npc.getName());
+        }
+        return returnString.toString();
+    }
+
     public Room getExit(String direction)
     {
         return exits.get(direction);
     }
-    // 预留给成员B的接口：向房间添加或移除物品
-    public void addItem(Item item) { }
-    public Item removeItem(String itemName) { return null; }
+    public void addItem(Item item)
+    {
+        items.put(item.getDescription(), item);
+    }
+
+    public Item removeItem(String itemName)
+    {
+        return items.remove(itemName);
+    }
+
+    public void addNPC(NPC npc)
+    {
+        npcs.put(npc.getName(), npc);
+    }
+
+    public String getNPCDialogue(String npcName)
+    {
+        NPC npc = npcs.get(npcName);
+        if (npc == null) {
+            return null;
+        }
+        return npc.getDialogue();
+    }
 }
 
 

@@ -1,10 +1,17 @@
 package cn.edu.whut.sept.zuul;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 管理 SQLite 数据库连接与初始化建表。
@@ -12,6 +19,7 @@ import java.sql.Statement;
 public class DatabaseManager
 {
     private static final String DEFAULT_DB_PATH = "data/zuul.db";
+    private static final String SCHEMA_RESOURCE = "/db/schema.sql";
     private final String jdbcUrl;
 
     public DatabaseManager()
@@ -45,43 +53,47 @@ public class DatabaseManager
     {
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
-            statement.execute(
-                    "CREATE TABLE IF NOT EXISTS game_save ("
-                            + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                            + "player_name TEXT NOT NULL, "
-                            + "current_room_name TEXT NOT NULL, "
-                            + "score INTEGER NOT NULL DEFAULT 0, "
-                            + "health INTEGER NOT NULL DEFAULT 100, "
-                            + "current_weight REAL NOT NULL DEFAULT 0, "
-                            + "max_weight REAL NOT NULL DEFAULT 10, "
-                            + "updated_at TEXT NOT NULL"
-                            + ")"
-            );
-            statement.execute(
-                    "CREATE TABLE IF NOT EXISTS inventory_item ("
-                            + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                            + "save_id INTEGER NOT NULL, "
-                            + "item_name TEXT NOT NULL, "
-                            + "weight REAL NOT NULL, "
-                            + "FOREIGN KEY (save_id) REFERENCES game_save(id)"
-                            + ")"
-            );
-            statement.execute(
-                    "CREATE TABLE IF NOT EXISTS room_item ("
-                            + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                            + "save_id INTEGER NOT NULL, "
-                            + "room_name TEXT NOT NULL, "
-                            + "item_name TEXT NOT NULL, "
-                            + "weight REAL NOT NULL, "
-                            + "FOREIGN KEY (save_id) REFERENCES game_save(id)"
-                            + ")"
-            );
+            for (String sql : loadSchemaStatements()) {
+                statement.execute(sql);
+            }
         }
     }
 
     public String getJdbcUrl()
     {
         return jdbcUrl;
+    }
+
+    static List<String> loadSchemaStatements() throws SQLException
+    {
+        InputStream inputStream = DatabaseManager.class.getResourceAsStream(SCHEMA_RESOURCE);
+        if (inputStream == null) {
+            throw new SQLException("Schema file not found: " + SCHEMA_RESOURCE);
+        }
+
+        StringBuilder sqlBuilder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmedLine = line.trim();
+                if (trimmedLine.isEmpty() || trimmedLine.startsWith("--")) {
+                    continue;
+                }
+                sqlBuilder.append(line).append('\n');
+            }
+        } catch (IOException e) {
+            throw new SQLException("Failed to read schema file.", e);
+        }
+
+        List<String> statements = new ArrayList<>();
+        for (String statement : sqlBuilder.toString().split(";")) {
+            String trimmedStatement = statement.trim();
+            if (!trimmedStatement.isEmpty()) {
+                statements.add(trimmedStatement);
+            }
+        }
+        return statements;
     }
 
     private void ensureDatabaseDirectory()

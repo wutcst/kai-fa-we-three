@@ -9,14 +9,17 @@ public class Game {
     private Room currentRoom;
     private Stack<Room> roomHistory; // 房间历史栈
     private Player player; // 新增玩家实例
+    private PlayerRecord loggedInProfile;
+    private final PlayerRepository playerRepository;
     private int hp = 100; // 任务2：生命值初始值
     private boolean victory = false; // 任务3：胜利标志
 
-    public Game() {
+    public Game(DatabaseManager databaseManager) {
+        this.playerRepository = new PlayerRepository(databaseManager);
         createRooms();
-        parser = new Parser();
-        roomHistory = new Stack<>(); // 初始化栈
-        player = new Player("Adventurer", 10); // 初始化玩家（默认最大负重10）
+        parser = new Parser(playerRepository);
+        roomHistory = new Stack<>();
+        player = new Player("Adventurer", 10);
     }
 
 
@@ -134,6 +137,27 @@ public class Game {
         return player;
     }
 
+    public PlayerRecord getLoggedInProfile() {
+        return loggedInProfile;
+    }
+
+    public boolean isLoggedIn() {
+        return loggedInProfile != null;
+    }
+
+    public void applyPlayerLogin(PlayerLoginResult loginResult) {
+        this.loggedInProfile = loginResult.getPlayer();
+        this.player.setName(loginResult.getPlayer().getName());
+
+        if (loginResult.isNewlyCreated()) {
+            System.out.println("欢迎新玩家 " + loginResult.getPlayer().getName()
+                    + "！玩家档案已创建并登录成功。");
+        } else {
+            System.out.println("欢迎回来，" + loginResult.getPlayer().getName() + "！登录成功。");
+        }
+        System.out.println("玩家 ID：" + loginResult.getPlayer().getId());
+    }
+
     public int getHp() {
         return hp;
     }
@@ -156,6 +180,7 @@ public class Game {
         System.out.println("Welcome to the World of Zuul!");
         System.out.println("World of Zuul is a new, incredibly boring adventure game.");
         System.out.println("Type 'help' if you need help.");
+        System.out.println("Type 'login <username>' to create or load your player profile.");
         System.out.println("当前生命值：" + hp);
         System.out.println();
         System.out.println(currentRoom.getLongDescription());

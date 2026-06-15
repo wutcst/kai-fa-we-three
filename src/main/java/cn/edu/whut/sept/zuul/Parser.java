@@ -7,9 +7,9 @@ public class Parser
     private CommandWords commands;  // holds all valid command words
     private Scanner reader;         // source of command input
 
-    public Parser()
+    public Parser(PlayerRepository playerRepository)
     {
-        commands = new CommandWords();
+        commands = new CommandWords(playerRepository);
         reader = new Scanner(System.in);
     }
 

@@ -42,6 +42,13 @@ public class Player {
         this.currentRoom = room;
     }
 
+    public int getCurrentWeight() {
+        return currentWeight;
+    }
+
+    public int getMaxWeight() {
+        return maxWeight;
+    }
     // ==========================================
     // 核心业务逻辑 (严格遵循验收标准与接口约定)
     // ==========================================

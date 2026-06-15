@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Zuul 冒险游戏 - 网页版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <!-- 顶部：玩家状态栏 -->
+    <div class="status-bar">
+        <span>当前房间：<span id="roomName">未知</span></span>
+        <span>生命值：<span id="hp">100</span></span>
+        <span>负重：<span id="weight">0/10</span></span>
+        <span>分数：<span id="score">0</span></span>
+    </div>
+
+    <!-- 中间区域：游戏日志 + 背包 -->
+    <div class="main-box">
+        <div class="game-log">
+            <h3>游戏日志</h3>
+            <div id="logContent"></div>
+        </div>
+
+        <div class="inventory">
+            <h3>我的背包</h3>
+            <div id="bagContent">背包为空</div>
+        </div>
+    </div>
+
+    <!-- 底部：命令输入 + 快捷按钮 -->
+    <div class="command-box">
+        <input type="text" id="cmdInput" placeholder="输入指令，例如 go east、take cookie">
+        <button onclick="sendCommand()">执行</button>
+
+        <div class="short-btn">
+            <button onclick="quickCmd('look')">look</button>
+            <button onclick="quickCmd('back')">back</button>
+            <button onclick="quickCmd('items')">items</button>
+            <button onclick="quickCmd('take')">take</button>
+            <button onclick="quickCmd('drop')">drop</button>
+        </div>
+    </div>
+</div>
+
+<!-- 引入交互脚本 -->
+<script src="game.js"></script>
+</body>
+</html>

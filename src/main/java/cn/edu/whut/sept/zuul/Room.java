@@ -2,6 +2,8 @@ package cn.edu.whut.sept.zuul;
 
 import java.util.Set;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Room
 {
@@ -81,6 +83,16 @@ public class Room
     public Item removeItem(String itemName)
     {
         return items.remove(itemName);
+    }
+
+    public List<Item> getItems()
+    {
+        return new ArrayList<>(items.values());
+    }
+
+    public void clearItems()
+    {
+        items.clear();
     }
 
     public void addNPC(NPC npc)

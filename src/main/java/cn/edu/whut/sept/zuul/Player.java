@@ -80,6 +80,33 @@ public class Player {
         return null;
     }
 
+    public int getCurrentWeight() {
+        return currentWeight;
+    }
+
+    public int getMaxWeight() {
+        return maxWeight;
+    }
+
+    public void setMaxWeight(int maxWeight) {
+        this.maxWeight = maxWeight;
+    }
+
+    public List<Item> getInventoryItems() {
+        return new ArrayList<>(inventory);
+    }
+
+    public void replaceInventory(List<Item> items, int maxWeight, int currentWeight) {
+        this.inventory = new ArrayList<>(items);
+        this.maxWeight = maxWeight;
+        this.currentWeight = currentWeight;
+    }
+
+    public void clearInventory() {
+        this.inventory = new ArrayList<>();
+        this.currentWeight = 0;
+    }
+
     /**
      * 查询背包当前状态
      * 验收标准: 返回当前背包所有物品的详细信息和总重量

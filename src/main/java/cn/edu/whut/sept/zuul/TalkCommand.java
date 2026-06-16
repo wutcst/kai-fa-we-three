@@ -17,8 +17,13 @@ public class TalkCommand extends Command {
             System.out.println("对话失败，生命值-2，当前HP：" + game.getHp());
         } else {
             System.out.println("[" + npcName + "]：" + dialogue);
-            game.setHp(game.getHp() + 5); // 对话成功+5HP
-            System.out.println("对话成功，生命值+5，当前HP：" + game.getHp());
+            game.setHp(game.getHp() + 5);
+            game.addScore(3);
+            if ("student".equals(npcName)) {
+                game.updateQuestProgress("main_quest", "hint_received");
+            }
+            System.out.println("对话成功，生命值+5，分数+3，当前HP：" + game.getHp()
+                    + "，当前分数：" + game.getScore());
         }
         return false;
     }

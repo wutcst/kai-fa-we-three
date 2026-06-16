@@ -1,7 +1,9 @@
 package cn.edu.whut.sept.zuul;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 public class Game {
@@ -11,13 +13,18 @@ public class Game {
     private Player player; // 新增玩家实例
     private PlayerRecord loggedInProfile;
     private final PlayerRepository playerRepository;
+    private final SaveService saveService;
+    private final Map<String, Room> roomsByDescription = new HashMap<>();
     private int hp = 100; // 任务2：生命值初始值
+    private int score = 0;
     private boolean victory = false; // 任务3：胜利标志
 
     public Game(DatabaseManager databaseManager) {
         this.playerRepository = new PlayerRepository(databaseManager);
+        SaveRepository saveRepository = new SaveRepository(databaseManager);
+        this.saveService = new SaveService(saveRepository);
         createRooms();
-        parser = new Parser(playerRepository);
+        parser = new Parser(playerRepository, saveService);
         roomHistory = new Stack<>();
         player = new Player("Adventurer", 10);
     }
@@ -44,6 +51,13 @@ public class Game {
         teleport = new TeleportRoom("in a mysterious teleport chamber", allRooms);
         allRooms.add(teleport);
 
+        registerRoom(outside);
+        registerRoom(theater);
+        registerRoom(pub);
+        registerRoom(lab);
+        registerRoom(office);
+        registerRoom(teleport);
+
         // 初始化出口
         outside.setExit("east", theater);
         outside.setExit("south", lab);
@@ -65,6 +79,57 @@ public class Game {
         pub.addItem(new Item("cookie", 1));
 
         currentRoom = outside; // 起点
+    }
+
+    private void registerRoom(Room room)
+    {
+        roomsByDescription.put(room.getShortDescription(), room);
+    }
+
+    public Room findRoomByDescription(String roomDescription)
+    {
+        return roomsByDescription.get(roomDescription);
+    }
+
+    public GameSnapshot createSnapshot()
+    {
+        GameSnapshot snapshot = new GameSnapshot();
+        snapshot.setCurrentRoomName(currentRoom.getShortDescription());
+        snapshot.setScore(score);
+        snapshot.setHealth(hp);
+        snapshot.setMaxWeight(player.getMaxWeight());
+        snapshot.setCurrentWeight(player.getCurrentWeight());
+        snapshot.setVictory(victory);
+        snapshot.setInventoryItems(copyInventoryItems(player.getInventoryItems()));
+        return snapshot;
+    }
+
+    public void applySnapshot(GameSaveRecord saveRecord) throws SaveException
+    {
+        Room targetRoom = findRoomByDescription(saveRecord.getCurrentRoomName());
+        if (targetRoom == null) {
+            throw new SaveException("存档中的房间不存在：" + saveRecord.getCurrentRoomName());
+        }
+
+        this.currentRoom = targetRoom;
+        this.roomHistory.clear();
+        this.hp = saveRecord.getHealth();
+        this.score = saveRecord.getScore();
+        this.victory = saveRecord.isVictory();
+        player.replaceInventory(
+                copyInventoryItems(saveRecord.getInventoryItems()),
+                saveRecord.getMaxWeight(),
+                saveRecord.getCurrentWeight()
+        );
+    }
+
+    private List<Item> copyInventoryItems(List<Item> items)
+    {
+        List<Item> copiedItems = new ArrayList<>();
+        for (Item item : items) {
+            copiedItems.add(new Item(item.getDescription(), item.getWeight()));
+        }
+        return copiedItems;
     }
 
 
@@ -158,6 +223,26 @@ public class Game {
         System.out.println("玩家 ID：" + loginResult.getPlayer().getId());
     }
 
+    public SaveService getSaveService() {
+        return saveService;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public boolean isVictory() {
+        return victory;
+    }
+
+    public void setVictory(boolean victory) {
+        this.victory = victory;
+    }
+
     public int getHp() {
         return hp;
     }
@@ -181,6 +266,7 @@ public class Game {
         System.out.println("World of Zuul is a new, incredibly boring adventure game.");
         System.out.println("Type 'help' if you need help.");
         System.out.println("Type 'login <username>' to create or load your player profile.");
+        System.out.println("Type 'save/load/saves/delete-save <saveName>' to manage game saves.");
         System.out.println("当前生命值：" + hp);
         System.out.println();
         System.out.println(currentRoom.getLongDescription());

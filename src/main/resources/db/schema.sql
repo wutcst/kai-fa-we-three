@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS game_save (
     score INTEGER NOT NULL DEFAULT 0,
     health INTEGER NOT NULL DEFAULT 100,
     current_weight REAL NOT NULL DEFAULT 0,
+    max_weight REAL NOT NULL DEFAULT 10,
     is_victory INTEGER NOT NULL DEFAULT 0,
     saved_at TEXT NOT NULL,
     FOREIGN KEY (player_id) REFERENCES player(id) ON DELETE CASCADE,

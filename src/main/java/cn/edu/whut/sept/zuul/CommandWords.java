@@ -6,7 +6,7 @@ import java.util.Iterator;
 public class CommandWords {
     private HashMap<String, Command> commands;
 
-    public CommandWords(PlayerRepository playerRepository) {
+    public CommandWords(PlayerRepository playerRepository, SaveService saveService) {
         commands = new HashMap<>();
         commands.put("go", new GoCommand());
         commands.put("help", new HelpCommand(this));
@@ -19,6 +19,10 @@ public class CommandWords {
         commands.put("look", new LookCommand());
         commands.put("talk", new TalkCommand());
         commands.put("login", new LoginCommand(playerRepository));
+        commands.put("save", new SaveCommand(saveService));
+        commands.put("load", new LoadCommand(saveService));
+        commands.put("saves", new SavesCommand(saveService));
+        commands.put("delete-save", new DeleteSaveCommand(saveService));
     }
 
     public Command get(String word) {

@@ -70,8 +70,8 @@ public class DatabaseManagerTest {
             );
             statement.execute(
                     "INSERT INTO game_save (player_id, save_name, current_room_name, score, health, "
-                            + "current_weight, is_victory, saved_at) "
-                            + "VALUES (1, 'default', 'outside', 20, 80, 5, 0, '2026-06-14T12:05:00')"
+                            + "current_weight, max_weight, is_victory, saved_at) "
+                            + "VALUES (1, 'default', 'outside', 20, 80, 5, 10, 0, '2026-06-14T12:05:00')"
             );
             statement.execute(
                     "INSERT INTO inventory_item (save_id, item_name, weight) VALUES (1, 'sword', 5)"
@@ -109,7 +109,7 @@ public class DatabaseManagerTest {
                 "id", "name", "max_weight", "created_at", "updated_at");
         assertColumnsExist(databaseManager, "game_save",
                 "id", "player_id", "save_name", "current_room_name", "score", "health",
-                "current_weight", "is_victory", "saved_at");
+                "current_weight", "max_weight", "is_victory", "saved_at");
         assertColumnsExist(databaseManager, "inventory_item",
                 "id", "save_id", "item_name", "weight");
     }

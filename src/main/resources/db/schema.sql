@@ -57,3 +57,44 @@ CREATE TABLE IF NOT EXISTS quest_progress (
 
 CREATE INDEX IF NOT EXISTS idx_room_item_save_id ON room_item(save_id);
 CREATE INDEX IF NOT EXISTS idx_quest_progress_save_id ON quest_progress(save_id);
+
+-- world_room: 游戏世界房间配置
+CREATE TABLE IF NOT EXISTS world_room (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    is_start_room INTEGER NOT NULL DEFAULT 0,
+    room_type TEXT NOT NULL DEFAULT 'normal'
+);
+
+-- world_room_exit: 房间出口连接
+CREATE TABLE IF NOT EXISTS world_room_exit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_room_id INTEGER NOT NULL,
+    direction TEXT NOT NULL,
+    to_room_id INTEGER NOT NULL,
+    FOREIGN KEY (from_room_id) REFERENCES world_room(id) ON DELETE CASCADE,
+    FOREIGN KEY (to_room_id) REFERENCES world_room(id) ON DELETE CASCADE,
+    UNIQUE(from_room_id, direction)
+);
+
+-- world_item: 物品配置
+CREATE TABLE IF NOT EXISTS world_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    weight REAL NOT NULL
+);
+
+-- world_room_item: 房间初始物品关联
+CREATE TABLE IF NOT EXISTS world_room_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id INTEGER NOT NULL,
+    item_id INTEGER NOT NULL,
+    FOREIGN KEY (room_id) REFERENCES world_room(id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES world_item(id) ON DELETE CASCADE,
+    UNIQUE(room_id, item_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_world_room_exit_from ON world_room_exit(from_room_id);
+CREATE INDEX IF NOT EXISTS idx_world_room_item_room ON world_room_item(room_id);

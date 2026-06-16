@@ -37,6 +37,10 @@ public class DatabaseManagerTest {
         assertTrue(tableExists(databaseManager, "inventory_item"));
         assertTrue(tableExists(databaseManager, "room_item"));
         assertTrue(tableExists(databaseManager, "quest_progress"));
+        assertTrue(tableExists(databaseManager, "world_room"));
+        assertTrue(tableExists(databaseManager, "world_room_exit"));
+        assertTrue(tableExists(databaseManager, "world_item"));
+        assertTrue(tableExists(databaseManager, "world_room_item"));
     }
 
     @Test

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import java.sql.SQLException;
 
 public class Game {
     private Parser parser;
@@ -15,6 +16,7 @@ public class Game {
     private final PlayerRepository playerRepository;
     private final SaveService saveService;
     private final Map<String, Room> roomsByDescription = new HashMap<>();
+    private String startRoomDescription;
     private int hp = 100; // 任务2：生命值初始值
     private int score = 0;
     private boolean victory = false; // 任务3：胜利标志
@@ -24,7 +26,17 @@ public class Game {
         this.playerRepository = new PlayerRepository(databaseManager);
         SaveRepository saveRepository = new SaveRepository(databaseManager);
         this.saveService = new SaveService(saveRepository);
-        createRooms();
+        try {
+            WorldDataRepository worldDataRepository = new WorldDataRepository(databaseManager);
+            worldDataRepository.seedDefaultWorldIfEmpty();
+            WorldLoadResult world = worldDataRepository.loadWorld();
+            roomsByDescription.putAll(world.getRoomsByDescription());
+            currentRoom = world.getStartRoom();
+            startRoomDescription = currentRoom.getShortDescription();
+            populateNPCs();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load game world from database.", e);
+        }
         parser = new Parser(playerRepository, saveService);
         roomHistory = new Stack<>();
         player = new Player("Adventurer", 10);
@@ -39,93 +51,45 @@ public class Game {
     }
 
 
-    private void createRooms() {
-        Room outside, theater, pub, lab, office;
-        TeleportRoom teleport;
-
-        outside = new Room("outside the main entrance of the university");
-        theater = new Room("in a lecture theater");
-        pub = new Room("in the campus pub");
-        lab = new Room("in a computing lab");
-        office = new Room("in the computing admin office");
-
-        List<Room> allRooms = new ArrayList<>();
-        allRooms.add(outside);
-        allRooms.add(theater);
-        allRooms.add(pub);
-        allRooms.add(lab);
-        allRooms.add(office);
-
-        teleport = new TeleportRoom("in a mysterious teleport chamber", allRooms);
-        allRooms.add(teleport);
-
-        registerRoom(outside);
-        registerRoom(theater);
-        registerRoom(pub);
-        registerRoom(lab);
-        registerRoom(office);
-        registerRoom(teleport);
-
-        outside.setExit("east", theater);
-        outside.setExit("south", lab);
-        outside.setExit("west", pub);
-        theater.setExit("west", outside);
-        theater.setExit("north", teleport);
-        theater.setExit("east", office);
-        pub.setExit("east", outside);
-        lab.setExit("north", outside);
-        lab.setExit("east", office);
-        office.setExit("west", lab);
-        office.setExit("south", theater);
-
-        populateWorldContent(outside, theater, pub, lab, office, teleport);
-
-        currentRoom = outside;
-    }
-
-    private void populateWorldContent(Room outside, Room theater, Room pub, Room lab,
-                                      Room office, TeleportRoom teleport)
+    private void populateNPCs()
     {
-        outside.addItem(new Item("campus_map", 1));
-        outside.addItem(new Item("welcome_brochure", 1));
-        outside.addNPC(new NPC("guard",
-                "欢迎来到武理校园！听说计算实验室里丢失了重要资料(task_item)，"
-                        + "找到它并带回正门就算完成任务。向南进入实验室看看吧。"));
+        Room outside = findRoomByDescription("outside the main entrance of the university");
+        Room theater = findRoomByDescription("in a lecture theater");
+        Room pub = findRoomByDescription("in the campus pub");
+        Room lab = findRoomByDescription("in a computing lab");
+        Room office = findRoomByDescription("in the computing admin office");
+        Room teleport = findRoomByDescription("in a mysterious teleport chamber");
 
-        theater.addItem(new Item("notebook", 2));
-        theater.addItem(new Item("pen", 1));
-        theater.addNPC(new NPC("lecturer",
-                "上课请保持安静。有人看到实验室的门昨晚没关好吗？"
-                        + "管理员 office 那边也许有更多线索。"));
-
-        pub.addItem(new Item("cookie", 1));
-        pub.addItem(new Item("energy_drink", 2));
-        pub.addNPC(new NPC("bartender",
-                "Welcome to the campus pub! 需要力量就试试 magic cookie，"
-                        + "它能永久提升你的负重上限。east 方向可以回到正门。"));
-
-        lab.addItem(new Item("task_item", 2));
-        lab.addItem(new Item("programming_manual", 3));
-        lab.addItem(new Item("usb_drive", 1));
-        lab.addNPC(new NPC("student",
-                "我在找 task_item，那是提交实训报告的关键文件！"
-                        + "拿到后记得带回 outside 才算真正完成使命。"));
-
-        office.addItem(new Item("keycard", 1));
-        office.addItem(new Item("report_template", 2));
-        office.addNPC(new NPC("admin",
-                "Please keep the computing lab tidy. "
-                        + "Office hours are 9 to 5. 如需存档，请先 login 登录，再使用 save 命令。"));
-
-        teleport.addNPC(new NPC("oracle",
-                "进入此 chamber 者，将被随机传送到校园某处。"
-                        + "祝你好运，冒险者。"));
-        teleport.addItem(new Item("teleport_shard", 1));
-    }
-
-    private void registerRoom(Room room)
-    {
-        roomsByDescription.put(room.getShortDescription(), room);
+        if (outside != null) {
+            outside.addNPC(new NPC("guard",
+                    "欢迎来到武理校园！听说计算实验室里丢失了重要资料(task_item)，"
+                            + "找到它并带回正门就算完成任务。向南进入实验室看看吧。"));
+        }
+        if (theater != null) {
+            theater.addNPC(new NPC("lecturer",
+                    "上课请保持安静。有人看到实验室的门昨晚没关好吗？"
+                            + "管理员 office 那边也许有更多线索。"));
+        }
+        if (pub != null) {
+            pub.addNPC(new NPC("bartender",
+                    "Welcome to the campus pub! 需要力量就试试 magic cookie，"
+                            + "它能永久提升你的负重上限。east 方向可以回到正门。"));
+        }
+        if (lab != null) {
+            lab.addNPC(new NPC("student",
+                    "我在找 task_item，那是提交实训报告的关键文件！"
+                            + "拿到后记得带回 outside 才算真正完成使命。"));
+        }
+        if (office != null) {
+            office.addNPC(new NPC("admin",
+                    "Please keep the computing lab tidy. "
+                            + "Office hours are 9 to 5. 如需存档，请先 login 登录，再使用 save 命令。"));
+        }
+        if (teleport != null) {
+            teleport.addNPC(new NPC("oracle",
+                    "进入此 chamber 者，将被随机传送到校园某处。"
+                            + "祝你好运，冒险者。"));
+        }
     }
 
     public Room findRoomByDescription(String roomDescription)
@@ -285,7 +249,7 @@ public class Game {
             return true;
         }
 
-        Room startRoom = findRoomByDescription("outside the main entrance of the university");
+        Room startRoom = findRoomByDescription(startRoomDescription);
         if (startRoom == null) {
             return false;
         }

@@ -11,11 +11,16 @@ public class HelpCommand extends Command
 
     public boolean execute(Game game)
     {
-        System.out.println("You are lost. You are alone. You wander");
-        System.out.println("around at the university.");
+        System.out.println("=== World of Zuul 帮助 ===");
+        System.out.println("你在大学校园中探索，收集物品、与 NPC 对话并完成主线任务。");
+        System.out.println("主线：拾取 task_item 后回到 outside 即可胜利。");
         System.out.println();
         System.out.println("Your command words are:");
         commandWords.showAll();
+        System.out.println();
+        System.out.println("当前状态：HP=" + game.getHp()
+                + "，分数=" + game.getScore()
+                + "，" + game.formatQuestProgress());
         return false;
     }
 }

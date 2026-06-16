@@ -1,7 +1,9 @@
 package cn.edu.whut.sept.zuul;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 某一时刻的游戏状态快照，用于存档读写。
@@ -15,6 +17,8 @@ public class GameSnapshot
     private int currentWeight;
     private boolean victory;
     private List<Item> inventoryItems = new ArrayList<>();
+    private List<RoomItemSnapshot> roomItems = new ArrayList<>();
+    private Map<String, String> questProgress = new HashMap<>();
 
     public String getCurrentRoomName()
     {
@@ -84,5 +88,25 @@ public class GameSnapshot
     public void setInventoryItems(List<Item> inventoryItems)
     {
         this.inventoryItems = inventoryItems;
+    }
+
+    public List<RoomItemSnapshot> getRoomItems()
+    {
+        return roomItems;
+    }
+
+    public void setRoomItems(List<RoomItemSnapshot> roomItems)
+    {
+        this.roomItems = roomItems;
+    }
+
+    public Map<String, String> getQuestProgress()
+    {
+        return questProgress;
+    }
+
+    public void setQuestProgress(Map<String, String> questProgress)
+    {
+        this.questProgress = questProgress;
     }
 }

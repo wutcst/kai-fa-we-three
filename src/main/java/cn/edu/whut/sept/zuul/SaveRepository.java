@@ -7,7 +7,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 负责 game_save 与 inventory_item 表的数据访问。
@@ -34,10 +36,14 @@ public class SaveRepository
                     saveId = existingSave.getId();
                     updateSave(connection, saveId, snapshot, savedAt);
                     deleteInventoryItems(connection, saveId);
+                    deleteRoomItems(connection, saveId);
+                    deleteQuestProgress(connection, saveId);
                 } else {
                     saveId = insertSave(connection, playerId, saveName, snapshot, savedAt);
                 }
                 insertInventoryItems(connection, saveId, snapshot.getInventoryItems());
+                insertRoomItems(connection, saveId, snapshot.getRoomItems());
+                insertQuestProgress(connection, saveId, snapshot.getQuestProgress());
                 connection.commit();
                 return saveId;
             } catch (SQLException e) {
@@ -57,6 +63,8 @@ public class SaveRepository
         }
 
         List<Item> inventoryItems = findInventoryItems(saveRecord.getId());
+        List<RoomItemSnapshot> roomItems = findRoomItems(saveRecord.getId());
+        Map<String, String> questProgress = findQuestProgress(saveRecord.getId());
         return new GameSaveRecord(
                 saveRecord.getId(),
                 saveRecord.getPlayerId(),
@@ -68,7 +76,9 @@ public class SaveRepository
                 saveRecord.getCurrentWeight(),
                 saveRecord.isVictory(),
                 saveRecord.getSavedAt(),
-                inventoryItems
+                inventoryItems,
+                roomItems,
+                questProgress
         );
     }
 
@@ -136,6 +146,46 @@ public class SaveRepository
             }
         }
         return items;
+    }
+
+    private List<RoomItemSnapshot> findRoomItems(long saveId) throws SQLException
+    {
+        List<RoomItemSnapshot> roomItems = new ArrayList<>();
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT room_name, item_name, weight FROM room_item "
+                             + "WHERE save_id = ? ORDER BY id")) {
+            statement.setLong(1, saveId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    roomItems.add(new RoomItemSnapshot(
+                            resultSet.getString("room_name"),
+                            resultSet.getString("item_name"),
+                            (int) Math.round(resultSet.getDouble("weight"))
+                    ));
+                }
+            }
+        }
+        return roomItems;
+    }
+
+    private Map<String, String> findQuestProgress(long saveId) throws SQLException
+    {
+        Map<String, String> questProgress = new HashMap<>();
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT quest_key, progress_value FROM quest_progress WHERE save_id = ?")) {
+            statement.setLong(1, saveId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    questProgress.put(
+                            resultSet.getString("quest_key"),
+                            resultSet.getString("progress_value")
+                    );
+                }
+            }
+        }
+        return questProgress;
     }
 
     private long insertSave(Connection connection, long playerId, String saveName,
@@ -218,6 +268,63 @@ public class SaveRepository
         }
     }
 
+    private void deleteRoomItems(Connection connection, long saveId) throws SQLException
+    {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "DELETE FROM room_item WHERE save_id = ?")) {
+            statement.setLong(1, saveId);
+            statement.executeUpdate();
+        }
+    }
+
+    private void deleteQuestProgress(Connection connection, long saveId) throws SQLException
+    {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "DELETE FROM quest_progress WHERE save_id = ?")) {
+            statement.setLong(1, saveId);
+            statement.executeUpdate();
+        }
+    }
+
+    private void insertRoomItems(Connection connection, long saveId, List<RoomItemSnapshot> roomItems)
+            throws SQLException
+    {
+        if (roomItems == null || roomItems.isEmpty()) {
+            return;
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO room_item (save_id, room_name, item_name, weight) VALUES (?, ?, ?, ?)")) {
+            for (RoomItemSnapshot roomItem : roomItems) {
+                statement.setLong(1, saveId);
+                statement.setString(2, roomItem.getRoomName());
+                statement.setString(3, roomItem.getItemName());
+                statement.setDouble(4, roomItem.getWeight());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    private void insertQuestProgress(Connection connection, long saveId, Map<String, String> questProgress)
+            throws SQLException
+    {
+        if (questProgress == null || questProgress.isEmpty()) {
+            return;
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO quest_progress (save_id, quest_key, progress_value) VALUES (?, ?, ?)")) {
+            for (Map.Entry<String, String> entry : questProgress.entrySet()) {
+                statement.setLong(1, saveId);
+                statement.setString(2, entry.getKey());
+                statement.setString(3, entry.getValue());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
     private GameSaveRecord mapSaveRecord(ResultSet resultSet, List<Item> inventoryItems)
             throws SQLException
     {
@@ -232,7 +339,9 @@ public class SaveRepository
                 (int) Math.round(resultSet.getDouble("current_weight")),
                 resultSet.getInt("is_victory") == 1,
                 resultSet.getString("saved_at"),
-                inventoryItems
+                inventoryItems,
+                null,
+                null
         );
     }
 }

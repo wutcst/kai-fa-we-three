@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.io.File;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class SaveServiceTest {
@@ -45,10 +46,14 @@ public class SaveServiceTest {
         TestContext context = new TestContext();
         context.login("Hero");
 
-        context.game.setCurrentRoom(context.game.findRoomByDescription("in a computing lab"));
+        Room lab = context.game.findRoomByDescription("in a computing lab");
+        context.game.setCurrentRoom(lab);
         context.game.setHp(75);
         context.game.setScore(30);
+        context.game.getPlayer().setMaxWeight(20);
         context.game.getPlayer().takeItem(new Item("sword", 5));
+        context.game.updateQuestProgress("main_quest", "collected_task_item");
+        lab.removeItem("task_item");
 
         context.saveService.save(context.game, "slot1");
 
@@ -56,6 +61,9 @@ public class SaveServiceTest {
         context.game.setHp(20);
         context.game.setScore(0);
         context.game.getPlayer().clearInventory();
+        context.game.getPlayer().setMaxWeight(10);
+        context.game.updateQuestProgress("main_quest", "started");
+        lab.addItem(new Item("task_item", 2));
 
         context.saveService.load(context.game, "slot1");
 
@@ -63,8 +71,12 @@ public class SaveServiceTest {
                 context.game.getCurrentRoom().getShortDescription());
         assertEquals(75, context.game.getHp());
         assertEquals(30, context.game.getScore());
+        assertEquals(20, context.game.getPlayer().getMaxWeight());
+        assertEquals(5, context.game.getPlayer().getCurrentWeight());
         assertEquals(1, context.game.getPlayer().getInventoryItems().size());
         assertEquals("sword", context.game.getPlayer().getInventoryItems().get(0).getDescription());
+        assertEquals("collected_task_item", context.game.getQuestProgressValue("main_quest"));
+        assertNull(lab.removeItem("task_item"));
     }
 
     @Test

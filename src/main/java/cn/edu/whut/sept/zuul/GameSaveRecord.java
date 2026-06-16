@@ -1,7 +1,9 @@
 package cn.edu.whut.sept.zuul;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 对应数据库 game_save 表及其背包物品。
@@ -19,10 +21,13 @@ public class GameSaveRecord
     private final boolean victory;
     private final String savedAt;
     private final List<Item> inventoryItems;
+    private final List<RoomItemSnapshot> roomItems;
+    private final Map<String, String> questProgress;
 
     public GameSaveRecord(long id, long playerId, String saveName, String currentRoomName,
                           int score, int health, int maxWeight, int currentWeight,
-                          boolean victory, String savedAt, List<Item> inventoryItems)
+                          boolean victory, String savedAt, List<Item> inventoryItems,
+                          List<RoomItemSnapshot> roomItems, Map<String, String> questProgress)
     {
         this.id = id;
         this.playerId = playerId;
@@ -35,6 +40,8 @@ public class GameSaveRecord
         this.victory = victory;
         this.savedAt = savedAt;
         this.inventoryItems = inventoryItems != null ? inventoryItems : new ArrayList<>();
+        this.roomItems = roomItems != null ? roomItems : new ArrayList<>();
+        this.questProgress = questProgress != null ? questProgress : new HashMap<>();
     }
 
     public long getId()
@@ -90,5 +97,15 @@ public class GameSaveRecord
     public List<Item> getInventoryItems()
     {
         return inventoryItems;
+    }
+
+    public List<RoomItemSnapshot> getRoomItems()
+    {
+        return roomItems;
+    }
+
+    public Map<String, String> getQuestProgress()
+    {
+        return questProgress;
     }
 }

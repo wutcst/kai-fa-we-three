@@ -23,7 +23,12 @@ public class TakeCommand extends Command {
         if (success) {
             System.out.println("成功拾取：" + item.getDescription() + " (重量：" + item.getWeight() + ")");
             game.setHp(game.getHp() + 3); // 拾取成功+3HP
-            System.out.println("拾取成功，生命值+3，当前HP：" + game.getHp());
+            game.addScore(5);
+            if ("task_item".equals(item.getDescription())) {
+                game.updateQuestProgress("main_quest", "collected_task_item");
+            }
+            System.out.println("拾取成功，生命值+3，分数+5，当前HP：" + game.getHp()
+                    + "，当前分数：" + game.getScore());
         } else {
             System.out.println("背包超重，无法拾取！");
             currentRoom.addItem(item); // 物品放回房间

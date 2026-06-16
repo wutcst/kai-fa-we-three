@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -53,9 +54,54 @@ public class DatabaseManager
     {
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
+            migrateIfNeeded(connection);
             for (String sql : loadSchemaStatements()) {
                 statement.execute(sql);
             }
+        }
+    }
+
+    /**
+     * 检测并迁移旧版数据库结构，避免旧表缺少新字段导致初始化失败。
+     */
+    private void migrateIfNeeded(Connection connection) throws SQLException
+    {
+        if (!tableExists(connection, "game_save")) {
+            return;
+        }
+
+        boolean needsMigration = !columnExists(connection, "game_save", "player_id")
+                || !columnExists(connection, "game_save", "max_weight")
+                || !columnExists(connection, "game_save", "save_name");
+
+        if (needsMigration) {
+            dropSaveRelatedTables(connection);
+            System.out.println("检测到旧版存档结构，已自动重建存档相关数据表（旧存档数据已清除）。");
+        }
+    }
+
+    private void dropSaveRelatedTables(Connection connection) throws SQLException
+    {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("DROP TABLE IF EXISTS quest_progress");
+            statement.execute("DROP TABLE IF EXISTS room_item");
+            statement.execute("DROP TABLE IF EXISTS inventory_item");
+            statement.execute("DROP TABLE IF EXISTS game_save");
+        }
+    }
+
+    private boolean tableExists(Connection connection, String tableName) throws SQLException
+    {
+        try (ResultSet resultSet = connection.getMetaData().getTables(null, null, tableName, null)) {
+            return resultSet.next();
+        }
+    }
+
+    private boolean columnExists(Connection connection, String tableName, String columnName)
+            throws SQLException
+    {
+        try (ResultSet resultSet = connection.getMetaData().getColumns(null, null, tableName, columnName)) {
+            return resultSet.next();
         }
     }
 

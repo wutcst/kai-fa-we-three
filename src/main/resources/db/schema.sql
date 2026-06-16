@@ -34,3 +34,26 @@ CREATE TABLE IF NOT EXISTS inventory_item (
 
 CREATE INDEX IF NOT EXISTS idx_game_save_player_id ON game_save(player_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_item_save_id ON inventory_item(save_id);
+
+-- room_item: 房间物品表，保存各房间剩余物品（世界状态）
+CREATE TABLE IF NOT EXISTS room_item (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    save_id INTEGER NOT NULL,
+    room_name TEXT NOT NULL,
+    item_name TEXT NOT NULL,
+    weight REAL NOT NULL,
+    FOREIGN KEY (save_id) REFERENCES game_save(id) ON DELETE CASCADE
+);
+
+-- quest_progress: 任务进度表，按 quest_key 保存任务状态
+CREATE TABLE IF NOT EXISTS quest_progress (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    save_id INTEGER NOT NULL,
+    quest_key TEXT NOT NULL,
+    progress_value TEXT NOT NULL,
+    FOREIGN KEY (save_id) REFERENCES game_save(id) ON DELETE CASCADE,
+    UNIQUE(save_id, quest_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_room_item_save_id ON room_item(save_id);
+CREATE INDEX IF NOT EXISTS idx_quest_progress_save_id ON quest_progress(save_id);

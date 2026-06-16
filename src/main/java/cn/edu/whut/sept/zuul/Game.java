@@ -18,6 +18,7 @@ public class Game {
     private int hp = 100; // 任务2：生命值初始值
     private int score = 0;
     private boolean victory = false; // 任务3：胜利标志
+    private final Map<String, String> questProgress = new HashMap<>();
 
     public Game(DatabaseManager databaseManager) {
         this.playerRepository = new PlayerRepository(databaseManager);
@@ -27,6 +28,14 @@ public class Game {
         parser = new Parser(playerRepository, saveService);
         roomHistory = new Stack<>();
         player = new Player("Adventurer", 10);
+        initializeQuestProgress();
+    }
+
+    private void initializeQuestProgress()
+    {
+        questProgress.clear();
+        questProgress.put("main_quest", "started");
+        questProgress.put("side_quest_cookie", "not_started");
     }
 
 
@@ -34,7 +43,6 @@ public class Game {
         Room outside, theater, pub, lab, office;
         TeleportRoom teleport;
 
-        // 创建房间
         outside = new Room("outside the main entrance of the university");
         theater = new Room("in a lecture theater");
         pub = new Room("in the campus pub");
@@ -58,27 +66,61 @@ public class Game {
         registerRoom(office);
         registerRoom(teleport);
 
-        // 初始化出口
         outside.setExit("east", theater);
         outside.setExit("south", lab);
         outside.setExit("west", pub);
         theater.setExit("west", outside);
         theater.setExit("north", teleport);
+        theater.setExit("east", office);
         pub.setExit("east", outside);
         lab.setExit("north", outside);
         lab.setExit("east", office);
         office.setExit("west", lab);
+        office.setExit("south", theater);
 
+        populateWorldContent(outside, theater, pub, lab, office, teleport);
 
-        pub.addNPC(new NPC("bartender", "Welcome to the campus pub! Take a break from your adventure."));
-        office.addNPC(new NPC("admin", "Please keep the computing lab tidy. Office hours are 9 to 5."));
+        currentRoom = outside;
+    }
 
-        // 添加胜利物品
-        lab.addItem(new Item("task_item", 2));
-        // 添加魔法饼干到pub
+    private void populateWorldContent(Room outside, Room theater, Room pub, Room lab,
+                                      Room office, TeleportRoom teleport)
+    {
+        outside.addItem(new Item("campus_map", 1));
+        outside.addItem(new Item("welcome_brochure", 1));
+        outside.addNPC(new NPC("guard",
+                "欢迎来到武理校园！听说计算实验室里丢失了重要资料(task_item)，"
+                        + "找到它并带回正门就算完成任务。向南进入实验室看看吧。"));
+
+        theater.addItem(new Item("notebook", 2));
+        theater.addItem(new Item("pen", 1));
+        theater.addNPC(new NPC("lecturer",
+                "上课请保持安静。有人看到实验室的门昨晚没关好吗？"
+                        + "管理员 office 那边也许有更多线索。"));
+
         pub.addItem(new Item("cookie", 1));
+        pub.addItem(new Item("energy_drink", 2));
+        pub.addNPC(new NPC("bartender",
+                "Welcome to the campus pub! 需要力量就试试 magic cookie，"
+                        + "它能永久提升你的负重上限。east 方向可以回到正门。"));
 
-        currentRoom = outside; // 起点
+        lab.addItem(new Item("task_item", 2));
+        lab.addItem(new Item("programming_manual", 3));
+        lab.addItem(new Item("usb_drive", 1));
+        lab.addNPC(new NPC("student",
+                "我在找 task_item，那是提交实训报告的关键文件！"
+                        + "拿到后记得带回 outside 才算真正完成使命。"));
+
+        office.addItem(new Item("keycard", 1));
+        office.addItem(new Item("report_template", 2));
+        office.addNPC(new NPC("admin",
+                "Please keep the computing lab tidy. "
+                        + "Office hours are 9 to 5. 如需存档，请先 login 登录，再使用 save 命令。"));
+
+        teleport.addNPC(new NPC("oracle",
+                "进入此 chamber 者，将被随机传送到校园某处。"
+                        + "祝你好运，冒险者。"));
+        teleport.addItem(new Item("teleport_shard", 1));
     }
 
     private void registerRoom(Room room)
@@ -101,6 +143,8 @@ public class Game {
         snapshot.setCurrentWeight(player.getCurrentWeight());
         snapshot.setVictory(victory);
         snapshot.setInventoryItems(copyInventoryItems(player.getInventoryItems()));
+        snapshot.setRoomItems(collectRoomItemSnapshots());
+        snapshot.setQuestProgress(new HashMap<>(questProgress));
         return snapshot;
     }
 
@@ -111,16 +155,72 @@ public class Game {
             throw new SaveException("存档中的房间不存在：" + saveRecord.getCurrentRoomName());
         }
 
+        restoreRoomItems(saveRecord.getRoomItems());
+
         this.currentRoom = targetRoom;
         this.roomHistory.clear();
         this.hp = saveRecord.getHealth();
         this.score = saveRecord.getScore();
         this.victory = saveRecord.isVictory();
+        this.questProgress.clear();
+        if (saveRecord.getQuestProgress().isEmpty()) {
+            initializeQuestProgress();
+        } else {
+            this.questProgress.putAll(saveRecord.getQuestProgress());
+        }
         player.replaceInventory(
                 copyInventoryItems(saveRecord.getInventoryItems()),
                 saveRecord.getMaxWeight(),
                 saveRecord.getCurrentWeight()
         );
+    }
+
+    private List<RoomItemSnapshot> collectRoomItemSnapshots()
+    {
+        List<RoomItemSnapshot> roomItems = new ArrayList<>();
+        for (Room room : roomsByDescription.values()) {
+            for (Item item : room.getItems()) {
+                roomItems.add(new RoomItemSnapshot(
+                        room.getShortDescription(),
+                        item.getDescription(),
+                        item.getWeight()
+                ));
+            }
+        }
+        return roomItems;
+    }
+
+    private void restoreRoomItems(List<RoomItemSnapshot> roomItems)
+    {
+        for (Room room : roomsByDescription.values()) {
+            room.clearItems();
+        }
+
+        if (roomItems == null) {
+            return;
+        }
+
+        for (RoomItemSnapshot roomItem : roomItems) {
+            Room room = findRoomByDescription(roomItem.getRoomName());
+            if (room != null) {
+                room.addItem(new Item(roomItem.getItemName(), roomItem.getWeight()));
+            }
+        }
+    }
+
+    public void updateQuestProgress(String questKey, String progressValue)
+    {
+        questProgress.put(questKey, progressValue);
+    }
+
+    public String getQuestProgressValue(String questKey)
+    {
+        return questProgress.get(questKey);
+    }
+
+    public void addScore(int points)
+    {
+        this.score += points;
     }
 
     private List<Item> copyInventoryItems(List<Item> items)
@@ -141,7 +241,8 @@ public class Game {
             // 任务3：每次循环检查胜利条件
             if (checkVictory()) {
                 System.out.println("=== 恭喜你！你完成了任务，游戏胜利！ ===");
-                System.out.println("剧情文本：你带着任务物品回到了起点，成功拯救了大学！");
+                System.out.println("剧情文本：你带着 task_item 回到了大学正门，成功拯救了校园网络系统！");
+                System.out.println("最终分数：" + score + "，最终生命值：" + hp);
                 finished = true;
                 continue;
             }
@@ -180,21 +281,31 @@ public class Game {
 
     // 任务3：胜利条件检查（携带task_item回到初始房间outside）
     private boolean checkVictory() {
-        Room startRoom = null;
-        // 找到初始房间（outside）
-        for (Room room : roomHistory) {
-            if (room.getShortDescription().equals("outside the main entrance of the university")) {
-                startRoom = room;
-                break;
-            }
-        }
-        if (startRoom == null) {
-            startRoom = currentRoom; // 初始房间可能还没入栈
+        if (victory) {
+            return true;
         }
 
-        // 条件1：在初始房间；条件2：背包有task_item
-        return currentRoom.equals(startRoom)
-                && player.dropItem("task_item") != null; // 临时检查后放回
+        Room startRoom = findRoomByDescription("outside the main entrance of the university");
+        if (startRoom == null) {
+            return false;
+        }
+
+        if (currentRoom == startRoom && hasItemInInventory("task_item")) {
+            victory = true;
+            questProgress.put("main_quest", "completed");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean hasItemInInventory(String itemName)
+    {
+        for (Item item : player.getInventoryItems()) {
+            if (item.getDescription().equals(itemName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -263,12 +374,23 @@ public class Game {
     private void printWelcome() {
         System.out.println();
         System.out.println("Welcome to the World of Zuul!");
-        System.out.println("World of Zuul is a new, incredibly boring adventure game.");
+        System.out.println("=== 校园冒险任务 ===");
+        System.out.println("目标：前往 computing lab 找到 task_item，再带回正门(outside) 完成使命。");
+        System.out.println("支线：在 pub 找到 cookie 并 eat cookie，可提升负重上限。");
+        System.out.println("提示：使用 talk <NPC名> 与 NPC 对话获取线索。");
+        System.out.println();
         System.out.println("Type 'help' if you need help.");
         System.out.println("Type 'login <username>' to create or load your player profile.");
         System.out.println("Type 'save/load/saves/delete-save <saveName>' to manage game saves.");
-        System.out.println("当前生命值：" + hp);
+        System.out.println("当前生命值：" + hp + "，当前分数：" + score);
+        System.out.println("任务进度：" + formatQuestProgress());
         System.out.println();
         System.out.println(currentRoom.getLongDescription());
+    }
+
+    public String formatQuestProgress()
+    {
+        return "主线=" + questProgress.getOrDefault("main_quest", "unknown")
+                + "，支线(cookie)=" + questProgress.getOrDefault("side_quest_cookie", "unknown");
     }
 }

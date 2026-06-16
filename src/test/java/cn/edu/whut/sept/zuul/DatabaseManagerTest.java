@@ -35,6 +35,37 @@ public class DatabaseManagerTest {
         assertTrue(tableExists(databaseManager, "player"));
         assertTrue(tableExists(databaseManager, "game_save"));
         assertTrue(tableExists(databaseManager, "inventory_item"));
+        assertTrue(tableExists(databaseManager, "room_item"));
+        assertTrue(tableExists(databaseManager, "quest_progress"));
+    }
+
+    @Test
+    public void testMigrateLegacyGameSaveSchema() throws Exception
+    {
+        File tempDb = File.createTempFile("zuul-legacy-migrate-", ".db");
+        tempDb.deleteOnExit();
+
+        DatabaseManager databaseManager = new DatabaseManager(tempDb.getAbsolutePath());
+        try (Connection connection = databaseManager.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.execute(
+                    "CREATE TABLE game_save ("
+                            + "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            + "player_name TEXT NOT NULL, "
+                            + "current_room_name TEXT NOT NULL, "
+                            + "score INTEGER NOT NULL DEFAULT 0, "
+                            + "health INTEGER NOT NULL DEFAULT 100, "
+                            + "current_weight REAL NOT NULL DEFAULT 0, "
+                            + "saved_at TEXT NOT NULL)"
+            );
+        }
+
+        databaseManager.initialize();
+
+        assertTrue(tableExists(databaseManager, "game_save"));
+        assertColumnsExist(databaseManager, "game_save",
+                "id", "player_id", "save_name", "current_room_name", "score", "health",
+                "current_weight", "max_weight", "is_victory", "saved_at");
     }
 
     @Test
@@ -51,6 +82,8 @@ public class DatabaseManagerTest {
         assertTrue(tableExists(databaseManager, "player"));
         assertTrue(tableExists(databaseManager, "game_save"));
         assertTrue(tableExists(databaseManager, "inventory_item"));
+        assertTrue(tableExists(databaseManager, "room_item"));
+        assertTrue(tableExists(databaseManager, "quest_progress"));
     }
 
     @Test

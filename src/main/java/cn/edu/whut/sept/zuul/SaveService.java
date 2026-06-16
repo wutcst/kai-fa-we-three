@@ -49,7 +49,11 @@ public class SaveService
             game.applySnapshot(saveRecord);
             return "存档 \"" + normalizedSaveName + "\" 读取成功。\n"
                     + "当前房间：" + saveRecord.getCurrentRoomName() + "\n"
-                    + "生命值：" + saveRecord.getHealth() + "，分数：" + saveRecord.getScore() + "\n"
+                    + "生命值：" + saveRecord.getHealth()
+                    + "，分数：" + saveRecord.getScore() + "\n"
+                    + "负重：" + saveRecord.getCurrentWeight()
+                    + " / " + saveRecord.getMaxWeight() + "\n"
+                    + "任务进度：" + saveRecord.getQuestProgress().getOrDefault("main_quest", "unknown") + "\n"
                     + game.getPlayer().getInventoryString();
         } catch (SQLException e) {
             throw new SaveException("读档失败，请稍后重试。");

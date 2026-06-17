@@ -10,11 +10,12 @@ import java.sql.SQLException;
 public class Game {
     private Parser parser;
     private Room currentRoom;
-    private Stack<Room> roomHistory; // 房间历史栈
-    private Player player; // 新增玩家实例
+    private Stack<Room> roomHistory;
+    private Player player;
     private PlayerRecord loggedInProfile;
     private final PlayerRepository playerRepository;
     private final SaveService saveService;
+    private final DatabaseManager databaseManager;
     private final Map<String, Room> roomsByDescription = new HashMap<>();
     private String startRoomDescription;
     private int hp = 100; // 任务2：生命值初始值
@@ -23,6 +24,7 @@ public class Game {
     private final Map<String, String> questProgress = new HashMap<>();
 
     public Game(DatabaseManager databaseManager) {
+        this.databaseManager = databaseManager;
         this.playerRepository = new PlayerRepository(databaseManager);
         SaveRepository saveRepository = new SaveRepository(databaseManager);
         this.saveService = new SaveService(saveRepository);
@@ -243,8 +245,8 @@ public class Game {
         }
     }
 
-    // 任务3：胜利条件检查（携带task_item回到初始房间outside）
-    private boolean checkVictory() {
+    // 胜利条件：必须将 task_item 放入 outside 的提交箱中
+    public boolean checkVictory() {
         if (victory) {
             return true;
         }
@@ -254,10 +256,21 @@ public class Game {
             return false;
         }
 
-        if (currentRoom == startRoom && hasItemInInventory("task_item")) {
+        // 只有当 task_item 被放入了 outside 房间（提交箱）才触发胜利
+        if (hasItemInRoom(startRoom, "task_item")) {
             victory = true;
             questProgress.put("main_quest", "completed");
+            System.out.println("=== 恭喜！task_item 已成功提交！ ===");
             return true;
+        }
+        return false;
+    }
+
+    private boolean hasItemInRoom(Room room, String itemName) {
+        for (Item item : room.getItems()) {
+            if (item.getDescription().equals(itemName)) {
+                return true;
+            }
         }
         return false;
     }
@@ -292,14 +305,41 @@ public class Game {
         if (loginResult.isNewlyCreated()) {
             System.out.println("欢迎新玩家 " + loginResult.getPlayer().getName()
                     + "！玩家档案已创建并登录成功。");
+            resetWorld();
         } else {
             System.out.println("欢迎回来，" + loginResult.getPlayer().getName() + "！登录成功。");
         }
         System.out.println("玩家 ID：" + loginResult.getPlayer().getId());
     }
 
+    public void resetWorld() {
+        try {
+            WorldDataRepository worldDataRepository = new WorldDataRepository(databaseManager);
+            worldDataRepository.seedDefaultWorldIfEmpty();
+            WorldLoadResult world = worldDataRepository.loadWorld();
+            roomsByDescription.clear();
+            roomsByDescription.putAll(world.getRoomsByDescription());
+            currentRoom = world.getStartRoom();
+            startRoomDescription = currentRoom.getShortDescription();
+            populateNPCs();
+        } catch (SQLException e) {
+            System.err.println("Failed to reload world: " + e.getMessage());
+        }
+        roomHistory.clear();
+        hp = 100;
+        score = 0;
+        victory = false;
+        player.clearInventory();
+        player.setMaxWeight(10);
+        initializeQuestProgress();
+    }
+
     public SaveService getSaveService() {
         return saveService;
+    }
+
+    public PlayerRepository getPlayerRepository() {
+        return playerRepository;
     }
 
     public int getScore() {

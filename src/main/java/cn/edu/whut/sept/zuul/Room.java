@@ -75,6 +75,11 @@ public class Room
     {
         return exits.get(direction);
     }
+
+    public List<String> getExitDirections()
+    {
+        return new ArrayList<>(exits.keySet());
+    }
     public void addItem(Item item)
     {
         items.put(item.getDescription(), item);
@@ -98,6 +103,11 @@ public class Room
     public void addNPC(NPC npc)
     {
         npcs.put(npc.getName(), npc);
+    }
+
+    public List<String> getNpcNames()
+    {
+        return new ArrayList<>(npcs.keySet());
     }
 
     public String getNPCDialogue(String npcName)

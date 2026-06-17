@@ -1,8 +1,17 @@
 package cn.edu.whut.sept.zuul;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
 public class Main {
 
     public static void main(String[] args) {
+        if (args.length == 0 || !"--cli".equals(args[0])) {
+            SpringApplication.run(Main.class, args);
+            return;
+        }
+
         DatabaseManager databaseManager;
         try {
             databaseManager = new DatabaseManager();

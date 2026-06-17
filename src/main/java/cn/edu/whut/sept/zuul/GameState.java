@@ -14,8 +14,14 @@ public class GameState {
     private int health;
     private double currentWeight;
     private double maxWeight;
+    private String roomDescription;
     private List<String> inventoryItems;
     private List<String> roomItems;
+    private List<String> availableExits;
+    private List<String> npcs;
+    private boolean victory;
+    private String questSummary;
+    private boolean loggedIn;
 
     public GameState() {
         this.playerName = "Player";
@@ -24,8 +30,14 @@ public class GameState {
         this.health = 100;
         this.currentWeight = 0.0;
         this.maxWeight = 10.0;
+        this.roomDescription = "Welcome to the World of Zuul.";
         this.inventoryItems = new ArrayList<>();
         this.roomItems = new ArrayList<>();
+        this.availableExits = new ArrayList<>();
+        this.npcs = new ArrayList<>();
+        this.victory = false;
+        this.questSummary = "主线=started，支线(cookie)=not_started";
+        this.loggedIn = false;
     }
 
     public String getPlayerName() {
@@ -76,6 +88,14 @@ public class GameState {
         this.maxWeight = maxWeight;
     }
 
+    public String getRoomDescription() {
+        return roomDescription;
+    }
+
+    public void setRoomDescription(String roomDescription) {
+        this.roomDescription = roomDescription;
+    }
+
     public List<String> getInventoryItems() {
         return inventoryItems;
     }
@@ -90,5 +110,45 @@ public class GameState {
 
     public void setRoomItems(List<String> roomItems) {
         this.roomItems = roomItems;
+    }
+
+    public List<String> getAvailableExits() {
+        return availableExits;
+    }
+
+    public void setAvailableExits(List<String> availableExits) {
+        this.availableExits = availableExits;
+    }
+
+    public List<String> getNpcs() {
+        return npcs;
+    }
+
+    public void setNpcs(List<String> npcs) {
+        this.npcs = npcs;
+    }
+
+    public boolean isVictory() {
+        return victory;
+    }
+
+    public void setVictory(boolean victory) {
+        this.victory = victory;
+    }
+
+    public String getQuestSummary() {
+        return questSummary;
+    }
+
+    public void setQuestSummary(String questSummary) {
+        this.questSummary = questSummary;
+    }
+
+    public boolean isLoggedIn() {
+        return loggedIn;
+    }
+
+    public void setLoggedIn(boolean loggedIn) {
+        this.loggedIn = loggedIn;
     }
 }

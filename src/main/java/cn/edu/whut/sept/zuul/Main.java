@@ -1,9 +1,11 @@
 package cn.edu.whut.sept.zuul;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
+@ConfigurationPropertiesScan("cn.edu.whut.sept.zuul")
 public class Main {
 
     public static void main(String[] args) {

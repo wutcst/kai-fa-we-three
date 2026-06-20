@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -137,6 +138,17 @@ public class GameService {
             names.add(item.getDescription() + " (" + item.getWeight() + ")");
         }
         return names;
+    }
+
+    /**
+     * 获取排行榜前 N 名。
+     */
+    public List<LeaderboardEntry> getLeaderboard(int limit) {
+        try {
+            return game.getSaveService().getLeaderboard(limit);
+        } catch (SQLException e) {
+            return new ArrayList<>();
+        }
     }
 
     private static class ParsedCommand {

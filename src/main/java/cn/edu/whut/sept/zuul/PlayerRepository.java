@@ -12,7 +12,7 @@ import java.time.Instant;
  */
 public class PlayerRepository
 {
-    private static final double DEFAULT_MAX_WEIGHT = 10;
+    private static final double DEFAULT_MAX_WEIGHT = GameConstants.DEFAULT_MAX_WEIGHT;
     private final DatabaseManager databaseManager;
 
     public PlayerRepository(DatabaseManager databaseManager)

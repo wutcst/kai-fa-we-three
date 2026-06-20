@@ -118,6 +118,19 @@ public class Room
         }
         return npc.getDialogue();
     }
+
+    /**
+     * Get NPC dialogue matching a specific condition (e.g. quest progress).
+     * Falls back to default dialogue if the condition has no match.
+     */
+    public String getNPCDialogue(String npcName, String condition)
+    {
+        NPC npc = npcs.get(npcName);
+        if (npc == null) {
+            return null;
+        }
+        return npc.getDialogue(condition);
+    }
 }
 
 

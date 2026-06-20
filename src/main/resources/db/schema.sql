@@ -98,3 +98,17 @@ CREATE TABLE IF NOT EXISTS world_room_item (
 
 CREATE INDEX IF NOT EXISTS idx_world_room_exit_from ON world_room_exit(from_room_id);
 CREATE INDEX IF NOT EXISTS idx_world_room_item_room ON world_room_item(room_id);
+
+-- leaderboard: 排行榜视图所需的高分缓存表
+CREATE TABLE IF NOT EXISTS leaderboard (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_id INTEGER NOT NULL,
+    player_name TEXT NOT NULL,
+    score INTEGER NOT NULL DEFAULT 0,
+    health INTEGER NOT NULL DEFAULT 100,
+    is_victory INTEGER NOT NULL DEFAULT 0,
+    saved_at TEXT NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES player(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC);

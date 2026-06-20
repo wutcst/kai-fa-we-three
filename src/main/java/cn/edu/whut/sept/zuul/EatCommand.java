@@ -16,18 +16,18 @@ public class EatCommand extends Command {
             System.out.println("成功吃掉：" + itemName + "！");
             if (itemName.equals("cookie")) {
                 System.out.println("魔法饼干生效！最大负重上限+10！");
-                game.setHp(game.getHp() + 20);
-                game.addScore(15);
+                game.setHp(game.getHp() + GameConstants.HP_GAIN_EAT_COOKIE);
+                game.addScore(GameConstants.SCORE_GAIN_COOKIE);
                 game.updateQuestProgress("side_quest_cookie", "completed");
                 System.out.println("生命值+20，分数+15，当前HP：" + game.getHp()
                         + "，当前分数：" + game.getScore());
             } else {
-                game.setHp(game.getHp() + 5); // 吃其他物品+5HP
+                game.setHp(game.getHp() + GameConstants.HP_GAIN_EAT_OTHER); // 吃其他物品+5HP
                 System.out.println("生命值+5，当前HP：" + game.getHp());
             }
         } else {
             System.out.println("无法吃掉这个物品（要么没有，要么不能吃）！");
-            game.setHp(game.getHp() - 3); // 吃失败扣3HP
+            game.setHp(game.getHp() - GameConstants.HP_LOSS_EAT_FAIL); // 吃失败扣3HP
             System.out.println("进食失败，生命值-3，当前HP：" + game.getHp());
         }
         return false;

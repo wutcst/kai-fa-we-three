@@ -13,7 +13,7 @@ public class GoCommand extends Command {
 
         if (nextRoom == null) {
             System.out.println("There is no door!");
-            game.setHp(game.getHp() - 5);
+            game.setHp(game.getHp() - GameConstants.HP_LOSS_WALL);
             System.out.println("移动失败，生命值-5，当前HP：" + game.getHp());
         } else {
             if (currentRoom instanceof TeleportRoom) {
@@ -22,7 +22,7 @@ public class GoCommand extends Command {
             }
             game.moveToRoom(nextRoom);
             System.out.println(nextRoom.getLongDescription());
-            game.setHp(game.getHp() + 1);
+            game.setHp(game.getHp() + GameConstants.HP_GAIN_MOVE);
             System.out.println("移动成功，生命值+1，当前HP：" + game.getHp());
         }
         return false;

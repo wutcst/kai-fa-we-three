@@ -9,10 +9,21 @@ import java.util.List;
 public class SaveService
 {
     private final SaveRepository saveRepository;
+    private final LeaderboardRepository leaderboardRepository;
 
-    public SaveService(SaveRepository saveRepository)
+    public SaveService(SaveRepository saveRepository,
+                       LeaderboardRepository leaderboardRepository)
     {
         this.saveRepository = saveRepository;
+        this.leaderboardRepository = leaderboardRepository;
+    }
+
+    /**
+     * 获取排行榜前 N 名。
+     */
+    public List<LeaderboardEntry> getLeaderboard(int limit) throws SQLException
+    {
+        return leaderboardRepository.getTopScores(limit);
     }
 
     public String save(Game game, String saveName) throws SaveException
@@ -26,6 +37,20 @@ public class SaveService
                     normalizedSaveName,
                     game.createSnapshot()
             );
+            // 同步更新排行榜
+            try {
+                leaderboardRepository.updateEntry(
+                        game.getLoggedInProfile().getId(),
+                        game.getLoggedInProfile().getName(),
+                        game.getScore(),
+                        game.getHp(),
+                        game.isVictory(),
+                        java.time.Instant.now().toString()
+                );
+            } catch (SQLException e) {
+                // 排行榜更新失败不影响存档
+                System.err.println("Leaderboard update failed: " + e.getMessage());
+            }
             return "存档 \"" + normalizedSaveName + "\" 保存成功（ID: " + saveId + "）。";
         } catch (SQLException e) {
             throw new SaveException("保存失败，请稍后重试。");

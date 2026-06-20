@@ -3,11 +3,15 @@ package cn.edu.whut.sept.zuul.web;
 import cn.edu.whut.sept.zuul.CommandResult;
 import cn.edu.whut.sept.zuul.GameService;
 import cn.edu.whut.sept.zuul.GameState;
+import cn.edu.whut.sept.zuul.LeaderboardEntry;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/game")
@@ -33,5 +37,11 @@ public class GameController {
     public GameState resetGame() {
         gameService.resetGame();
         return gameService.getCurrentState();
+    }
+
+    @GetMapping("/leaderboard")
+    public List<LeaderboardEntry> getLeaderboard(
+            @RequestParam(defaultValue = "20") int limit) {
+        return gameService.getLeaderboard(limit);
     }
 }

@@ -14,6 +14,7 @@
             --grad-gold:linear-gradient(135deg,#f9d05f,#f0a820);--grad-blue:linear-gradient(135deg,#50d0ff,#3080e0);
             --shadow-sm:0 2px 8px rgba(0,0,0,0.3);--shadow-md:0 8px 32px rgba(0,0,0,0.45);--shadow-lg:0 16px 48px rgba(0,0,0,0.55);
         }
+
         body{font-family:"Inter","Segoe UI","Microsoft YaHei",Arial,sans-serif;background:var(--bg-deep);color:var(--ink);overflow:hidden;height:100vh}
         #app{height:100vh;display:grid;grid-template-rows:auto 1fr auto;background:radial-gradient(ellipse at 50% 0%,rgba(50,150,220,0.04),transparent 60%)}
 
@@ -60,6 +61,8 @@
         .st{background:var(--glass);border:1px solid var(--glass-border);border-radius:6px;padding:7px 9px;text-align:center;position:relative;backdrop-filter:blur(8px);transition:all 200ms ease}
         .st .l{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:1px}.st .v{font-size:17px;font-weight:900}
         .st.critical{border-color:var(--red);animation:criticalPulse 0.7s ease-in-out infinite}
+        .hud-badges{display:flex;align-items:center;justify-content:center;gap:4px}
+        .badge{font-size:12px;background:rgba(249,208,95,0.2);padding:2px 4px;border-radius:4px}
         @keyframes criticalPulse{0%,100%{box-shadow:0 0 0 rgba(255,112,136,0)}50%{box-shadow:0 0 18px rgba(255,112,136,0.6),inset 0 0 20px rgba(255,112,136,0.08)}}
         .v.gold{color:var(--gold)}.v.green{color:var(--green)}.v.blue{color:var(--blue)}.v.red{color:var(--red)}
         .bar{height:3px;margin-top:3px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden}
@@ -163,6 +166,25 @@
         @keyframes bagAnim{0%{transform:scale(1)}30%{transform:scale(1.06)}100%{transform:scale(1)}}
         .bag-flash{animation:bagAnim 400ms ease}
 
+        /* Leaderboard */
+        .lb-overlay{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.88);backdrop-filter:blur(14px)}
+        .lb-card{width:500px;max-height:78vh;overflow-y:auto;padding:36px 40px;border:1px solid rgba(249,208,95,0.3);background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg),0 0 60px rgba(249,208,95,0.06);text-align:center}
+        .lb-card h2{font-size:28px;color:var(--gold);margin-bottom:20px}
+        .lb-row{display:grid;grid-template-columns:40px 1fr 80px 60px 80px;gap:8px;padding:10px 12px;border-bottom:1px solid var(--glass-border);align-items:center;font-size:13px;text-align:left}
+        .lb-row.header{color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase;border-bottom:2px solid var(--gold)}
+        .lb-rank{font-weight:900;text-align:center}
+        .lb-rank.top1{color:var(--gold);font-size:20px}.lb-rank.top2{color:#c0c0c0;font-size:17px}.lb-rank.top3{color:#cd7f32;font-size:15px}
+        .lb-name{font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .lb-score{color:var(--gold);font-weight:900;text-align:right}.lb-hp{color:var(--green);text-align:right}.lb-badge{text-align:center}
+        .lb-empty{color:var(--muted);padding:30px;font-size:14px}
+        .lb-loading{color:var(--muted);padding:30px;font-size:14px}
+        .btn-close{position:absolute;top:12px;right:16px;background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer;transition:all 150ms ease}
+        .btn-close:hover{color:var(--ink);transform:scale(1.15)}
+
+        /* Loading spinner */
+        .loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(249,208,95,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.6s linear infinite;margin-right:6px;vertical-align:middle}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
         @media(max-width:860px){.top-hud{grid-template-columns:1fr}.hud-stats{grid-template-columns:repeat(3,1fr)}.bottom-area{grid-template-columns:1fr}.cmd-panel{display:none}.dpad{right:4px;bottom:50px;grid-template-columns:44px 44px 44px;grid-template-rows:44px 44px 44px}.dpad-btn{width:44px;height:44px;font-size:16px}.dpad-center{width:44px;height:44px}.backpack-bar{width:150px}}
     </style>
 </head>
@@ -198,6 +220,7 @@
                 <button class="btn-guide" v-if="guideStep>1" @click="guideStep--">← 上一步</button>
                 <button class="btn-guide" v-if="guideStep<5" @click="guideStep++">下一步 →</button>
                 <button class="btn-guide primary" v-if="guideStep===5" @click="startGame">🎮 开始冒险！</button>
+                <button class="btn-guide" style="border-color:rgba(255,255,255,0.06);color:var(--muted)" @click="startGame">⏭ 跳过</button>
             </div>
         </div>
     </div>
@@ -212,9 +235,11 @@
             <div class="st" :class="{critical:state.health<=25}"><div class="l">生命值</div><div class="v" :class="hpCls">{{ state.health||0 }}</div><div class="bar"><div class="bar-fill hp" :style="{width:hpPct+'%'}"></div></div></div>
             <div class="st"><div class="l">负重</div><div class="v blue">{{ fmtW(state.currentWeight) }}/{{ fmtW(state.maxWeight) }}</div><div class="bar"><div class="bar-fill wt" :style="{width:wtPct+'%'}"></div></div></div>
             <div class="st"><div class="l">任务</div><div class="v gold" style="font-size:11px">{{ questShort }}</div></div>
+            <div class="st hud-badges" v-if="achievements.length"><span v-for="a in achievements" :key="a.id" class="badge">{{ a.icon }}</span></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;justify-content:center">
             <div style="display:flex;gap:4px;align-items:center">
+                <button class="login-btn" @click="showLeaderboard=true;fetchLeaderboard()" title="排行榜" style="font-size:18px">🏆</button>
                 <button class="login-btn" :class="{logged:state.loggedIn}" @click="gamePhase='login'" :title="state.loggedIn?'已登录，点击切换账号':'点击登录'">{{ state.loggedIn ? '👤 '+state.playerName : '🔑 登录' }}</button>
                 <button class="login-btn" style="padding:6px 8px;font-size:14px" @click="showSettings=!showSettings" title="设置">⚙</button>
             </div>
@@ -461,7 +486,29 @@
             <div style="margin-bottom:16px;color:var(--gold);font-size:13px;font-weight:700">
                 {{ state.score >= 50 ? '🌟 完美通关！你是校园英雄！' : state.score >= 20 ? '👍 不错的成绩！还可以探索更多！' : '📝 试试多探索一些支线任务吧！' }}
             </div>
-            <button class="btn-restart" @click="restartGame" style="font-size:16px;padding:10px 32px">🔄 再来一局</button>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+                <button class="btn-restart" @click="joinLeaderboard" style="font-size:16px;padding:10px 28px;background:linear-gradient(135deg,#f9d05f,#f0a820);color:#1d1300">🏆 加入排行榜</button>
+                <button class="btn-restart" @click="restartGame" style="font-size:16px;padding:10px 32px">🔄 再来一局</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ LEADERBOARD OVERLAY ═══ -->
+    <div class="lb-overlay" v-if="showLeaderboard" @click.self="showLeaderboard=false">
+        <div class="lb-card" style="position:relative">
+            <button class="btn-close" @click="showLeaderboard=false">✕</button>
+            <h2>🏆 排行榜</h2>
+            <div class="lb-row header"><span>#</span><span>玩家</span><span>分数</span><span>HP</span><span>状态</span></div>
+            <div v-if="lbLoading" class="lb-loading"><span class="loading-spinner"></span>加载中...</div>
+            <div v-else-if="lbError" class="lb-empty">{{ lbError }}</div>
+            <div v-else-if="leaderboard.length===0" class="lb-empty">还没有人存档过，快来成为第一名吧！</div>
+            <div class="lb-row" v-for="(e,i) in leaderboard" :key="e.playerName">
+                <span class="lb-rank" :class="{'top1':i===0,'top2':i===1,'top3':i===2}">{{ i+1 }}</span>
+                <span class="lb-name">{{ e.playerName }}</span>
+                <span class="lb-score">{{ e.score }}</span>
+                <span class="lb-hp">{{ e.health }}</span>
+                <span class="lb-badge">{{ e.victory?'🏆通关':'🕹' }}</span>
+            </div>
         </div>
     </div>
 
@@ -494,22 +541,20 @@ const ITEM_SVGS={campus_map:'<svg viewBox="0 0 28 28"><rect x="2" y="4" width="2
 
 const GUIDE_PAGES={1:{title:'🎯 任务目标',html:'<h3>主线任务</h3><p>前往 <span class="tip">computing lab</span> 找到 <span class="tip">task_item</span>，带回大学正门，点击金色 <span class="tip">📦提交箱</span> 放入即可通关！</p><h3>⚠ 注意</h3><p>只有放对 <span class="tip">task_item</span> 才通关，放错会提示应放什么。</p><h3>支线任务</h3><p>在 <span class="tip">pub</span> 吃 <span class="tip">magic cookie</span>，负重上限 <span class="tip">+10kg</span>。</p>'},2:{title:'🎮 操控与生命值',html:'<p><span class="tip">WASD/方向键/D-Pad</span> 移动（可用方向金色，<span style="color:#fb7185">红色⚠️方向会撞墙扣5HP</span>）</p><p>成功移动 <span class="tip">HP+1</span>，撞墙 <span class="tip">HP-5</span></p><p><span class="tip">B键</span> 返回上一房间</p><p>扣血时<span style="color:#fb7185">屏幕红闪</span>，回血时<span style="color:#4ade80">绿闪</span></p>'},3:{title:'👥 NPC 与对话',html:'<p><span class="tip">点击NPC角色</span>可触发对话获得线索。</p><p>对话成功 <span class="tip">HP+5、分数+3</span>，对话失败 <span class="tip">HP-2</span>。</p><p>每个房间有不同NPC，多和他们聊聊！</p>'},4:{title:'📦 物品与背包',html:'<p>点击场景物品<span class="tip">拾取</span>（成功 <span class="tip">HP+3</span>，超重 <span class="tip">HP-3</span>）。</p><p>左侧背包栏可<span class="tip">丢弃</span>或<span class="tip">食用</span>物品。</p><p>吃cookie <span class="tip">HP+20</span>，所有操作伴有动画。</p>'},5:{title:'💾 存档与开始',html:'<p>你已登录，随时可用底部 <span class="tip">💾存档</span> 保存进度！</p><p>通关后成绩也会自动记录。</p><p style="color:var(--gold);font-weight:900;font-size:15px">准备好了吗？开始你的校园冒险吧！</p>'}};
 
-createApp({data(){return{gamePhase:'login',loginName:'',loginError:'',loginMode:'register',guideStep:1,prevHp:100,hpChange:null,screenFlash:null,paused:false,showSettings:false,state:{playerName:'Adventurer',currentRoomName:'outside the main entrance of the university',score:0,health:100,currentWeight:0,maxWeight:10,inventoryItems:[],roomItems:[],availableExits:[],npcs:[],victory:false,questSummary:'主线=started，支线(cookie)=not_started',loggedIn:false},commandText:'',loading:false,errorMsg:'',toast:'',toastTimer:null,logs:[],logId:2,visitedRooms:new Set(['outside']),mmNodes:MM_NODES,mmLines:MM_LINES,shelfBooks:[{x:10,w:8,c:'#e06040'},{x:24,w:6,c:'#4080c0'},{x:35,w:10,c:'#50a050'},{x:52,w:7,c:'#c08030'},{x:65,w:8,c:'#8060a0'},{x:80,w:6,c:'#d0a030'}],teleParticles:[{i:1,x:280,y:90,r:2.5,anim:'90;55;90',dur:'3s'},{i:2,x:480,y:70,r:2,anim:'70;38;70',dur:'2.5s'},{i:3,x:320,y:280,r:3,anim:'280;245;280',dur:'3.5s'},{i:4,x:460,y:320,r:2.2,anim:'320;285;320',dur:'2.8s'},{i:5,x:230,y:190,r:2.5,anim:'190;155;190',dur:'3.2s'},{i:6,x:520,y:170,r:2,anim:'170;135;170',dur:'2.6s'},{i:7,x:400,y:140,r:1.8,anim:'140;105;140',dur:'2.2s'},{i:8,x:300,y:250,r:2.2,anim:'250;218;250',dur:'3.8s'},{i:9,x:500,y:280,r:1.8,anim:'280;245;280',dur:'2.4s'},{i:10,x:370,y:330,r:2.8,anim:'330;295;330',dur:'3.1s'}],speechBubble:{show:false,x:0,y:0,text:''},speechTimer:null,floatItem:{show:false,x:0,y:0,emoji:'',opacity:1},floatTimer:null,playerBob:0,bobTimer:null,bagOpacity:0,bagFlash:false,prevInventoryCount:0};},
-computed:{inventoryItems(){return this.state.inventoryItems||[]},roomItems(){return this.state.roomItems||[]},npcs(){return this.state.npcs||[]},exits(){return this.state.availableExits||[]},hpPct(){return Math.max(0,Math.min(100,Number(this.state.health||0)))},wtPct(){const m=Math.max(1,Number(this.state.maxWeight||1));return Math.max(0,Math.min(100,Math.round(Number(this.state.currentWeight||0)*100/m)))},hpCls(){const h=this.state.health||0;return h>60?'green':h>25?'gold':'red'},currentRoomKey(){const n=String(this.state.currentRoomName||'').toLowerCase();for(const k of['teleport','office','lab','pub','theater','outside']){if(n.indexOf(k)>=0)return k}return'outside'},exitLabels(){return EXIT_POS[this.currentRoomKey]||[]},questShort(){const q=this.state.questSummary||'';if(q.includes('completed'))return'✅完成';if(q.includes('collected'))return'📋已获取';return'🔍进行中'},guideTitle(){return GUIDE_PAGES[this.guideStep]?.title||''},guideContent(){return GUIDE_PAGES[this.guideStep]?.html||''},playerX(){return(ROOM_PLAYER_POS[this.currentRoomKey]||ROOM_PLAYER_POS.outside).x},playerY(){return(ROOM_PLAYER_POS[this.currentRoomKey]||ROOM_PLAYER_POS.outside).y}},
-methods:{
-    async doLogin(){const name=this.loginName.trim();if(!name)return;this.loginError='';const mode=this.loginMode;try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'login '+name})});const d=await r.json();const msg=d.message||'';if(mode==='register'&&msg.includes('欢迎回来')){this.loginError='⚠ 用户名「'+name+'」已存在！请切换到登录标签';return}if(mode==='signin'&&msg.includes('欢迎新玩家')){this.loginError='⚠ 用户名「'+name+'」不存在！请切换到注册标签先创建账号';return}this.state=d.gameState||this.state;if(!this.state.loggedIn){this.loginError='登录失败，请重试';return}if(mode==='register'){this.showToastMsg('✅ 注册成功！欢迎，'+name+'！')}else{this.showToastMsg('👤 欢迎回来，'+name+'！')}this.gamePhase='guide';this.guideStep=1;this.loginName='';this.prevHp=this.state.health||100;this.initGame()}catch(e){this.loginError='无法连接到服务器'}},
-    initGame(){this.visitedRooms=new Set(['outside']);this.logs=[{id:1,cmd:'',msg:'🎓 主线任务：前往 computing lab 找到 task_item，带回大学正门(outside)，点击金色📦提交箱放入即可通关！\n支线：在 pub 吃掉 magic cookie 提升负重上限+10kg。\n提示：方向键移动（红色⚠️方向会撞墙扣HP），点击场景拾取物品和对话NPC。',system:true}];this.logId=2;this.prevInventoryCount=this.inventoryItems.length;this.prevHp=this.state.health||100;this.updateBag()},
+createApp({data(){return{gamePhase:'login',loginName:'',loginError:'',loginMode:'register',guideStep:1,prevHp:100,hpChange:null,screenFlash:null,paused:false,showSettings:false,showLeaderboard:false,leaderboard:[],lbLoading:false,lbError:'',achievements:[],state:{playerName:'Adventurer',currentRoomName:'outside the main entrance of the university',score:0,health:100,currentWeight:0,maxWeight:10,inventoryItems:[],roomItems:[],availableExits:[],npcs:[],victory:false,questSummary:'主线=started，支线(cookie)=not_started',loggedIn:false},commandText:'',loading:false,errorMsg:'',toast:'',toastTimer:null,logs:[],logId:2,visitedRooms:new Set(['outside']),mmNodes:MM_NODES,mmLines:MM_LINES,shelfBooks:[{x:10,w:8,c:'#e06040'},{x:24,w:6,c:'#4080c0'},{x:35,w:10,c:'#50a050'},{x:52,w:7,c:'#c08030'},{x:65,w:8,c:'#8060a0'},{x:80,w:6,c:'#d0a030'}],teleParticles:[{i:1,x:280,y:90,r:2.5,anim:'90;55;90',dur:'3s'},{i:2,x:480,y:70,r:2,anim:'70;38;70',dur:'2.5s'},{i:3,x:320,y:280,r:3,anim:'280;245;280',dur:'3.5s'},{i:4,x:460,y:320,r:2.2,anim:'320;285;320',dur:'2.8s'},{i:5,x:230,y:190,r:2.5,anim:'190;155;190',dur:'3.2s'},{i:6,x:520,y:170,r:2,anim:'170;135;170',dur:'2.6s'},{i:7,x:400,y:140,r:1.8,anim:'140;105;140',dur:'2.2s'},{i:8,x:300,y:250,r:2.2,anim:'250;218;250',dur:'3.8s'},{i:9,x:500,y:280,r:1.8,anim:'280;245;280',dur:'2.4s'},{i:10,x:370,y:330,r:2.8,anim:'330;295;330',dur:'3.1s'}],speechBubble:{show:false,x:0,y:0,text:''},speechTimer:null,floatItem:{show:false,x:0,y:0,emoji:'',opacity:1},floatTimer:null,playerBob:0,bobTimer:null,bagOpacity:0,bagFlash:false,prevInventoryCount:0,audioCtx:null};},
+computed:{inventoryItems(){return this.state.inventoryItems||[]},roomItems(){return this.state.roomItems||[]},npcs(){return this.state.npcs||[]},exits(){return this.state.availableExits||[]},hpPct(){return Math.max(0,Math.min(100,Number(this.state.health||0)))},wtPct(){const m=Math.max(1,Number(this.state.maxWeight||1));return Math.max(0,Math.min(100,Math.round(Number(this.state.currentWeight||0)*100/m)))},hpCls(){const h=this.state.health||0;return h>60?'green':h>25?'gold':'red'},currentRoomKey(){const n=String(this.state.currentRoomName||'').toLowerCase();for(const k of['teleport','office','lab','pub','theater','outside']){if(n.indexOf(k)>=0)return k}return'outside'},exitLabels(){return EXIT_POS[this.currentRoomKey]||[]},questShort(){const q=this.state.questSummary||'';if(q.includes('completed'))return'✅完成';if(q.includes('collected'))return'📋已获取';return'🔍进行中'},guideTitle(){return GUIDE_PAGES[this.guideStep]?.title||''},guideContent(){return GUIDE_PAGES[this.guideStep]?.html||''},playerX(){return(ROOM_PLAYER_POS[this.currentRoomKey]||ROOM_PLAYER_POS.outside).x},playerY(){return(ROOM_PLAYER_POS[this.currentRoomKey]||ROOM_PLAYER_POS.outside).y}},methods:{
+    async doLogin(){const name=this.loginName.trim();if(!name)return;this.loginError='';const mode=this.loginMode;try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'login '+name})});const d=await r.json();const msg=d.message||'';if(mode==='register'&&msg.includes('欢迎回来')){this.loginError='⚠ 用户名「'+name+'」已存在！请切换到登录标签';return}if(mode==='signin'&&msg.includes('欢迎新玩家')){this.loginError='⚠ 用户名「'+name+'」不存在！请切换到注册标签先创建账号';return}this.state=d.gameState||this.state;if(!this.state.loggedIn){this.loginError='登录失败，请重试';return}if(mode==='register'){this.showToastMsg('✅ 注册成功！欢迎，'+name+'！')}else{this.showToastMsg('👤 欢迎回来，'+name+'！')}this.gamePhase='guide';this.guideStep=1;this.loginName='';this.prevHp=this.state.health||100;localStorage.removeItem('backpack');this.initGame()}catch(e){this.loginError='无法连接到服务器'}},
+    initGame(){this.visitedRooms=new Set(['outside']);this.logs=[{id:1,cmd:'',msg:'🎓 主线任务：前往 computing lab 找到 task_item，带回大学正门(outside)，点击金色📦提交箱放入即可通关！\n支线：在 pub 吃掉 magic cookie 提升负重上限+10kg。\n提示：方向键移动（红色⚠️方向会撞墙扣HP），点击场景拾取物品和对话NPC。',system:true}];this.logId=2;this.prevInventoryCount=this.inventoryItems.length;this.prevHp=this.state.health||100;this.updateBag();this.loadBackpack()},
     riskyMove(dir){this.runCmd('go '+dir)},
     submitTask(){const hasTask=this.inventoryItems.some(i=>this.itemName(i).toLowerCase().includes('task_item'));if(hasTask){this.showToast('📦 正在提交 task_item...');this.runCmd('drop task_item')}else{const itemNames=this.inventoryItems.map(i=>this.itemName(i)).join('、')||'空背包';this.showToast('❌ 提交失败！箱子里需要放入 task_item，你当前有：'+itemNames)}},
     randomTeleport(){const dirs=['north','south','east','west'];const d=dirs[Math.floor(Math.random()*4)];this.showToast('🌀 随机传送中...');this.runCmd('go '+d)},
     showToastMsg(m){this.toast=m;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{this.toast=''},2500)},
     checkHpChange(){const cur=this.state.health||0;const prev=this.prevHp;if(cur!==prev){this.hpChange={val:cur-prev,up:cur>prev};this.screenFlash=cur>prev?'heal':'dmg';setTimeout(()=>{this.hpChange=null},1000);setTimeout(()=>{this.screenFlash=null},400);this.prevHp=cur}},
     togglePause(){this.paused=!this.paused;this.showSettings=false},
-    async doRestart(){this.showSettings=false;this.paused=false;this.visitedRooms=new Set(['outside']);this.prevInventoryCount=0;this.prevHp=100;try{await fetch('/api/game/reset',{method:'POST'});const r=await fetch('/api/game/state');this.state=await r.json()}catch(e){}this.initGame();this.gamePhase='playing';this.$nextTick(()=>{this.$el.focus()})},
-    doQuit(){this.showSettings=false;this.paused=false;this.gamePhase='login';this.loginMode='signin';this.state.loggedIn=false},
+    async doRestart(){this.showSettings=false;this.paused=false;this.visitedRooms=new Set(['outside']);this.prevInventoryCount=0;this.prevHp=100;localStorage.removeItem('backpack');try{await fetch('/api/game/reset',{method:'POST'});const r=await fetch('/api/game/state');this.state=await r.json()}catch(e){}this.initGame();this.gamePhase='playing';this.$nextTick(()=>{this.$el.focus()})},
+    doQuit(){this.showSettings=false;this.paused=false;this.gamePhase='login';this.loginMode='signin';this.state.loggedIn=false;localStorage.removeItem('backpack')},
     startGame(){this.gamePhase='playing';this.$nextTick(()=>{this.$el.focus()})},
     markVisited(){const k=this.currentRoomKey;if(!this.visitedRooms.has(k))this.visitedRooms=new Set([...this.visitedRooms,k])},
-    autoGreet(rk){const d=NPC_DATA[rk];if(!d)return;clearTimeout(this.speechTimer);const X={outside:410,theater:390,pub:410,lab:390,office:370,teleport:400},Y={outside:220,theater:120,pub:130,lab:250,office:190,teleport:90};this.speechBubble={show:true,x:Math.min(480,Math.max(200,(X[rk]||400)-30)),y:(Y[rk]||200)-55,text:d[1]};this.speechTimer=setTimeout(()=>{this.speechBubble.show=false},7000)},
     talkToNPC(npc){const rk=this.currentRoomKey,d=NPC_DATA[rk];if(!d)return;clearTimeout(this.speechTimer);const X={outside:410,theater:390,pub:410,lab:390,office:370,teleport:400},Y={outside:220,theater:120,pub:130,lab:250,office:190,teleport:90};this.speechBubble={show:true,x:Math.min(480,Math.max(200,X[rk]-30)),y:Y[rk]-55,text:d[1]};this.runCmd('talk '+npc);this.speechTimer=setTimeout(()=>{this.speechBubble.show=false},7000)},
     hasRoomItem(name){return this.roomItems.some(i=>this.itemName(i).toLowerCase()===name.toLowerCase())},
     doDrop(item){const n=this.itemName(item);this.runCmd('drop '+n);this.animateDrop(n)},
@@ -522,15 +567,67 @@ methods:{
     updateBag(){this.bagOpacity=this.inventoryItems.length>0?1:0},
     flashBagAnim(){this.bagFlash=true;setTimeout(()=>{this.bagFlash=false},400)},
     startBob(){clearTimeout(this.bobTimer);this.playerBob=-6;this.bobTimer=setTimeout(()=>{this.playerBob=0},400)},
-    async runCmd(text){if(this.paused)return;const cmd=(text||'').trim();if(!cmd||this.loading)return;this.loading=true;this.errorMsg='';try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});const result=await r.json();const prevRoom=this.state.currentRoomName;const prevCount=this.inventoryItems.length;this.state=result.gameState||this.state;this.checkHpChange();this.logs.push({id:this.logId++,cmd:cmd,msg:result.message||'命令已执行。',system:false});this.commandText='';this.markVisited();const nowCount=this.inventoryItems.length;if(nowCount>prevCount){const takenItem=cmd.startsWith('take ')?cmd.substring(5).trim():'';this.animatePickup(takenItem);this.flashBagAnim()}else if(nowCount<prevCount){this.flashBagAnim()}this.updateBag();this.showFeedback(cmd,prevRoom,this.state.currentRoomName);await nextTick();this.$nextTick(()=>{const el=this.$refs.logEl;if(el)el.scrollTop=el.scrollHeight})}catch(e){this.errorMsg='命令执行失败'}finally{this.loading=false}},
+    async runCmd(text){if(this.paused)return;const cmd=(text||'').trim();if(!cmd||this.loading)return;this.loading=true;this.errorMsg='';try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});const result=await r.json();const prevRoom=this.state.currentRoomName;const prevCount=this.inventoryItems.length;this.state=result.gameState||this.state;this.checkHpChange();this.logs.push({id:this.logId++,cmd:cmd,msg:result.message||'命令已执行。',system:false});this.commandText='';this.markVisited();const nowCount=this.inventoryItems.length;if(nowCount>prevCount){const takenItem=cmd.startsWith('take ')?cmd.substring(5).trim():'';this.animatePickup(takenItem);this.flashBagAnim()}else if(nowCount<prevCount){this.flashBagAnim()}this.updateBag();this.saveBackpack();this.showFeedback(cmd,prevRoom,this.state.currentRoomName,result.message);await nextTick();this.$nextTick(()=>{const el=this.$refs.logEl;if(el)el.scrollTop=el.scrollHeight})}catch(e){this.errorMsg='命令执行失败'}finally{this.loading=false}},
     onKey(e){if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;const k=e.key.toLowerCase();if(k==='escape'){this.togglePause();return}if(this.paused)return;let d=null;if(k==='arrowup'||k==='w')d='north';else if(k==='arrowdown'||k==='s')d='south';else if(k==='arrowleft'||k==='a')d='west';else if(k==='arrowright'||k==='d')d='east';else if(k==='b'){e.preventDefault();this.runCmd('back');return}if(d){e.preventDefault();this.runCmd('go '+d)}},
     clickMinimapRoom(key){if(key===this.currentRoomKey||!this.visitedRooms.has(key))return;const exits=ROOM_EXITS[this.currentRoomKey]||[];const m=exits.find(e=>e.to===key);if(m)this.runCmd('go '+m.dir)},
     itemName(item){return String(item||'').replace(/\s*\([^)]*\)\s*$/,'').trim()},
     itemWt(item){const m=String(item||'').match(/\((\d+(?:\.\d+)?)\)/);return m?m[1]:'?'},
     fmtW(v){const n=Number(v||0);return Number.isInteger(n)?String(n):n.toFixed(1)},
-    showFeedback(cmd,prev,cur){if((cmd.startsWith('go ')||cmd==='back')&&prev&&cur&&prev!==cur){this.showToast('📍 '+cur);this.startBob()}if(cmd.startsWith('take '))this.showToast('✅ 拾取: '+cmd.substring(5));if(cmd.startsWith('drop ')){const n=cmd.substring(5).trim();if(this.currentRoomKey==='outside'&&n.toLowerCase().includes('task_item')){this.showToast('📦 task_item 已放入提交箱！任务完成！')}else if(this.currentRoomKey==='outside'){this.showToast('⚠ 提交箱只需要 task_item，你放了：'+n)}else{this.showToast('🗑 丢弃: '+n)}}if(cmd.startsWith('eat ')){const n=cmd.substring(4).trim();this.showToast(n.toLowerCase().includes('cookie')?'🍪 魔法饼干生效！负重上限+10kg！':'🍽 已食用: '+n)}if(cmd.startsWith('talk '))this.showToast('💬 与 '+cmd.substring(5)+' 对话');if(cmd.startsWith('login '))this.showToast('👤 登录成功！欢迎，冒险者！')},
+    showFeedback(cmd,prev,cur,msg){
+        if((cmd.startsWith('go ')||cmd==='back')&&prev&&cur&&prev!==cur){this.showToast('📍 '+cur);this.startBob()}
+        if(cmd.startsWith('take '))this.showToast('✅ 拾取: '+cmd.substring(5));
+        if(cmd.startsWith('drop ')){
+            const n=cmd.substring(5).trim();
+            if(this.currentRoomKey==='outside' && n.toLowerCase().includes('task_item')){
+                if(msg&&msg.includes('放入')){this.showToast('📦 task_item 已放入提交箱！任务完成！');if(!this.achievements.find(a=>a.id==='task')){this.achievements.push({id:'task',icon:'📦',name:'任务完成'});}this.playSound('task');this.celebrateTask();}else{this.showToast('⚠ 提交箱只需要 task_item，你放了：'+n);}
+            } else if(this.currentRoomKey==='outside'){
+                this.showToast('⚠ 提交箱只需要 task_item，你放了：'+n);
+            } else {
+                this.showToast('🗑 丢弃: '+n);
+            }
+        }
+        if(cmd.startsWith('eat ')){
+            const n=cmd.substring(4).trim();
+            if(msg&&msg.includes('成功吃掉')){
+                this.showToast(n.toLowerCase().includes('cookie')?'🍪 魔法饼干生效！负重上限+10kg！':'🍽 已食用: '+n);
+            }else{
+                this.showToast('❌ '+n+' 不能吃！');
+            }
+        }
+        if(cmd.startsWith('talk '))this.showToast('💬 与 '+cmd.substring(5)+' 对话');
+        if(cmd.startsWith('login '))this.showToast('👤 登录成功！欢迎，冒险者！');
+    },
+    loadBackpack(){try{const data=localStorage.getItem('backpack');if(data){const obj=JSON.parse(data);this.state.inventoryItems=obj.inventoryItems||[];this.state.currentWeight=obj.currentWeight||0;this.state.maxWeight=obj.maxWeight||10;}}catch(e){}},
+    saveBackpack(){try{const data={inventoryItems:this.state.inventoryItems,currentWeight:this.state.currentWeight,maxWeight:this.state.maxWeight};localStorage.setItem('backpack',JSON.stringify(data));}catch(e){}},
     showToast(msg){this.toast=msg;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{this.toast=''},2500)},
-    async restartGame(){this.paused=false;this.visitedRooms=new Set(['outside']);this.prevInventoryCount=0;this.prevHp=100;try{await fetch('/api/game/reset',{method:'POST'});const r=await fetch('/api/game/state');this.state=await r.json()}catch(e){}this.initGame();this.gamePhase='playing';this.$nextTick(()=>{this.$el.focus()})}
+    initAudio(){if(!this.audioCtx){try{this.audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}},
+    playTone(freq,dur,type,gain){if(!this.audioCtx)return;try{const o=this.audioCtx.createOscillator();const g=this.audioCtx.createGain();o.type=type||'sine';o.frequency.setValueAtTime(freq,this.audioCtx.currentTime);g.gain.setValueAtTime(gain||0.15,this.audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,this.audioCtx.currentTime+dur);o.connect(g);g.connect(this.audioCtx.destination);o.start();o.stop(this.audioCtx.currentTime+dur)}catch(e){}},
+    playSound(type){
+        this.initAudio();
+        if(type==='pick'){this.playTone(880,0.15,'sine',0.12);setTimeout(()=>this.playTone(1100,0.12,'sine',0.1),80)}
+        else if(type==='drop'){this.playTone(300,0.15,'triangle',0.12);setTimeout(()=>this.playTone(220,0.2,'triangle',0.1),80)}
+        else if(type==='eat'){this.playTone(440,0.1,'sine',0.12);setTimeout(()=>this.playTone(660,0.1,'sine',0.12),100);setTimeout(()=>this.playTone(880,0.15,'sine',0.15),200)}
+        else if(type==='task'){this.playTone(523,0.12,'sine',0.12);setTimeout(()=>this.playTone(659,0.12,'sine',0.12),120);setTimeout(()=>this.playTone(784,0.12,'sine',0.12),240);setTimeout(()=>this.playTone(1047,0.3,'sine',0.18),360)}
+    },
+    async joinLeaderboard(){
+        if(this.state.loggedIn){
+            // 先保存游戏以触发排行榜记录
+            try{await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'save quicksave'})})}catch(e){}
+        }
+        await this.fetchLeaderboard();
+        this.showLeaderboard=true;
+    },
+    async fetchLeaderboard(){this.lbLoading=true;this.lbError='';try{const r=await fetch('/api/game/leaderboard?limit=20');if(!r.ok)throw new Error('HTTP '+r.status);this.leaderboard=await r.json()}catch(e){this.lbError='加载排行榜失败';this.leaderboard=[]}finally{this.lbLoading=false}},
+    celebrateTask(){
+        // simple sparkle float item
+        const ma=this.$refs.mainArea; if(!ma) return;
+        const r=ma.getBoundingClientRect();
+        this.floatItem={show:true,x:r.width*0.5,y:r.height*0.3,emoji:'✨',opacity:1};
+        setTimeout(()=>{this.floatItem.opacity=0;},800);
+        this.floatTimer=setTimeout(()=>{this.floatItem.show=false;},1000);
+    },
+    async restartGame(){this.paused=false;this.visitedRooms=new Set(['outside']);this.prevInventoryCount=0;this.prevHp=100;localStorage.removeItem('backpack');try{await fetch('/api/game/reset',{method:'POST'});const r=await fetch('/api/game/state');this.state=await r.json()}catch(e){}this.initGame();this.gamePhase='playing';this.$nextTick(()=>{this.$el.focus()})},
+    mounted(){}
 }}).mount('#app');
 </script>
 </body>

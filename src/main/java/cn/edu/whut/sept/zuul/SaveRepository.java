@@ -74,7 +74,26 @@ public class SaveRepository
                 saveRecord.getHealth(),
                 saveRecord.getMaxWeight(),
                 saveRecord.getCurrentWeight(),
+                saveRecord.getLevel(),
+                saveRecord.getExp(),
+                saveRecord.getAtk(),
+                saveRecord.getDef(),
+                saveRecord.getSp(),
+                saveRecord.getGold(),
+                saveRecord.getGameTime(),
+                saveRecord.getDayCount(),
+                saveRecord.getTeleportVisits(),
                 saveRecord.isVictory(),
+                saveRecord.getEndingTypeName(),
+                saveRecord.getStepCount(),
+                saveRecord.getItemsCollected(),
+                saveRecord.getQuizTotal(),
+                saveRecord.getQuizCorrect(),
+                saveRecord.getEnemiesDefeated(),
+                saveRecord.getFleeCount(),
+                saveRecord.getRoomsVisited(),
+                saveRecord.getNpcAffinityData(),
+                saveRecord.getNpcTalkedData(),
                 saveRecord.getSavedAt(),
                 inventoryItems,
                 roomItems,
@@ -88,7 +107,7 @@ public class SaveRepository
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                      "SELECT id, player_id, save_name, current_room_name, score, health, "
-                             + "max_weight, current_weight, is_victory, saved_at "
+                             + "max_weight, current_weight, level, exp, atk, def, sp, gold, game_time, day_count, teleport_visits, is_victory, ending_type_name, step_count, items_collected, quiz_total, quiz_correct, enemies_defeated, flee_count, rooms_visited, npc_affinity_data, npc_talked_data, saved_at "
                              + "FROM game_save WHERE player_id = ? ORDER BY saved_at DESC")) {
             statement.setLong(1, playerId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -116,7 +135,7 @@ public class SaveRepository
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(
                      "SELECT id, player_id, save_name, current_room_name, score, health, "
-                             + "max_weight, current_weight, is_victory, saved_at "
+                             + "max_weight, current_weight, level, exp, atk, def, sp, gold, game_time, day_count, teleport_visits, is_victory, ending_type_name, step_count, items_collected, quiz_total, quiz_correct, enemies_defeated, flee_count, rooms_visited, npc_affinity_data, npc_talked_data, saved_at "
                              + "FROM game_save WHERE player_id = ? AND save_name = ?")) {
             statement.setLong(1, playerId);
             statement.setString(2, saveName);
@@ -193,8 +212,11 @@ public class SaveRepository
     {
         try (PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO game_save (player_id, save_name, current_room_name, score, health, "
-                        + "current_weight, max_weight, is_victory, saved_at) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        + "current_weight, max_weight, level, exp, atk, def, sp, gold, "
+                        + "game_time, day_count, teleport_visits, is_victory, ending_type_name, "
+                        + "step_count, items_collected, quiz_total, quiz_correct, enemies_defeated, flee_count, rooms_visited, "
+                        + "npc_affinity_data, npc_talked_data, saved_at) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             bindSaveStatement(statement, playerId, saveName, snapshot, savedAt);
             statement.executeUpdate();
@@ -212,16 +234,38 @@ public class SaveRepository
     {
         try (PreparedStatement statement = connection.prepareStatement(
                 "UPDATE game_save SET current_room_name = ?, score = ?, health = ?, "
-                        + "current_weight = ?, max_weight = ?, is_victory = ?, saved_at = ? "
+                        + "current_weight = ?, max_weight = ?, level = ?, exp = ?, atk = ?, def = ?, sp = ?, gold = ?, "
+                        + "game_time = ?, day_count = ?, teleport_visits = ?, is_victory = ?, ending_type_name = ?, "
+                        + "step_count = ?, items_collected = ?, quiz_total = ?, quiz_correct = ?, enemies_defeated = ?, flee_count = ?, rooms_visited = ?, "
+                        + "npc_affinity_data = ?, npc_talked_data = ?, saved_at = ? "
                         + "WHERE id = ?")) {
             statement.setString(1, snapshot.getCurrentRoomName());
             statement.setInt(2, snapshot.getScore());
             statement.setInt(3, snapshot.getHealth());
             statement.setDouble(4, snapshot.getCurrentWeight());
             statement.setDouble(5, snapshot.getMaxWeight());
-            statement.setInt(6, snapshot.isVictory() ? 1 : 0);
-            statement.setString(7, savedAt);
-            statement.setLong(8, saveId);
+            statement.setInt(6, snapshot.getLevel());
+            statement.setInt(7, snapshot.getExp());
+            statement.setInt(8, snapshot.getAtk());
+            statement.setInt(9, snapshot.getDef());
+            statement.setInt(10, snapshot.getSp());
+            statement.setInt(11, snapshot.getGold());
+            statement.setInt(12, snapshot.getGameTime());
+            statement.setInt(13, snapshot.getDayCount());
+            statement.setInt(14, snapshot.getTeleportVisits());
+            statement.setInt(15, snapshot.isVictory() ? 1 : 0);
+            statement.setString(16, snapshot.getEndingTypeName());
+            statement.setInt(17, snapshot.getStepCount());
+            statement.setInt(18, snapshot.getItemsCollected());
+            statement.setInt(19, snapshot.getQuizTotal());
+            statement.setInt(20, snapshot.getQuizCorrect());
+            statement.setInt(21, snapshot.getEnemiesDefeated());
+            statement.setInt(22, snapshot.getFleeCount());
+            statement.setInt(23, snapshot.getRoomsVisited());
+            statement.setString(24, snapshot.getNpcAffinityData());
+            statement.setString(25, snapshot.getNpcTalkedData());
+            statement.setString(26, savedAt);
+            statement.setLong(27, saveId);
             statement.executeUpdate();
         }
     }
@@ -236,8 +280,27 @@ public class SaveRepository
         statement.setInt(5, snapshot.getHealth());
         statement.setDouble(6, snapshot.getCurrentWeight());
         statement.setDouble(7, snapshot.getMaxWeight());
-        statement.setInt(8, snapshot.isVictory() ? 1 : 0);
-        statement.setString(9, savedAt);
+        statement.setInt(8, snapshot.getLevel());
+        statement.setInt(9, snapshot.getExp());
+        statement.setInt(10, snapshot.getAtk());
+        statement.setInt(11, snapshot.getDef());
+        statement.setInt(12, snapshot.getSp());
+        statement.setInt(13, snapshot.getGold());
+        statement.setInt(14, snapshot.getGameTime());
+        statement.setInt(15, snapshot.getDayCount());
+        statement.setInt(16, snapshot.getTeleportVisits());
+        statement.setInt(17, snapshot.isVictory() ? 1 : 0);
+        statement.setString(18, snapshot.getEndingTypeName());
+        statement.setInt(19, snapshot.getStepCount());
+        statement.setInt(20, snapshot.getItemsCollected());
+        statement.setInt(21, snapshot.getQuizTotal());
+        statement.setInt(22, snapshot.getQuizCorrect());
+        statement.setInt(23, snapshot.getEnemiesDefeated());
+        statement.setInt(24, snapshot.getFleeCount());
+        statement.setInt(25, snapshot.getRoomsVisited());
+        statement.setString(26, snapshot.getNpcAffinityData());
+        statement.setString(27, snapshot.getNpcTalkedData());
+        statement.setString(28, savedAt);
     }
 
     private void deleteInventoryItems(Connection connection, long saveId) throws SQLException
@@ -337,7 +400,26 @@ public class SaveRepository
                 resultSet.getInt("health"),
                 (int) Math.round(resultSet.getDouble("max_weight")),
                 (int) Math.round(resultSet.getDouble("current_weight")),
+                resultSet.getInt("level"),
+                resultSet.getInt("exp"),
+                resultSet.getInt("atk"),
+                resultSet.getInt("def"),
+                resultSet.getInt("sp"),
+                resultSet.getInt("gold"),
+                resultSet.getInt("game_time"),
+                resultSet.getInt("day_count"),
+                resultSet.getInt("teleport_visits"),
                 resultSet.getInt("is_victory") == 1,
+                resultSet.getString("ending_type_name"),
+                resultSet.getInt("step_count"),
+                resultSet.getInt("items_collected"),
+                resultSet.getInt("quiz_total"),
+                resultSet.getInt("quiz_correct"),
+                resultSet.getInt("enemies_defeated"),
+                resultSet.getInt("flee_count"),
+                resultSet.getInt("rooms_visited"),
+                resultSet.getString("npc_affinity_data"),
+                resultSet.getString("npc_talked_data"),
                 resultSet.getString("saved_at"),
                 inventoryItems,
                 null,

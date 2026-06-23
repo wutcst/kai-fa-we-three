@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/game")
@@ -43,5 +44,18 @@ public class GameController {
     public List<LeaderboardEntry> getLeaderboard(
             @RequestParam(defaultValue = "20") int limit) {
         return gameService.getLeaderboard(limit);
+    }
+
+    @PostMapping("/leaderboard/join")
+    public Map<String, Object> joinLeaderboard() {
+        gameService.joinLeaderboard();
+        return Map.of("success", true);
+    }
+
+    @PostMapping("/time")
+    public GameState setStartTime(@RequestBody Map<String, Integer> body) {
+        int minutes = body.getOrDefault("minutes", 480);
+        gameService.setStartTime(minutes);
+        return gameService.getCurrentState();
     }
 }

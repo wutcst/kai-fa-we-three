@@ -8,17 +8,21 @@ public class PlayerRecord
     private final long id;
     private final String name;
     private final double maxWeight;
+    private final String password;
     private final String createdAt;
     private final String updatedAt;
 
-    public PlayerRecord(long id, String name, double maxWeight, String createdAt, String updatedAt)
+    public PlayerRecord(long id, String name, double maxWeight, String password, String createdAt, String updatedAt)
     {
         this.id = id;
         this.name = name;
         this.maxWeight = maxWeight;
+        this.password = password;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
+
+    public String getPassword() { return password; }
 
     public long getId()
     {

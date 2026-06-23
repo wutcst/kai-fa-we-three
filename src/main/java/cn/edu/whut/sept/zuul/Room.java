@@ -110,6 +110,11 @@ public class Room
         return new ArrayList<>(npcs.keySet());
     }
 
+    public NPC getNpc(String npcName)
+    {
+        return npcs.get(npcName);
+    }
+
     public String getNPCDialogue(String npcName)
     {
         NPC npc = npcs.get(npcName);

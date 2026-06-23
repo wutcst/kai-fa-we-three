@@ -1,634 +1,166 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>World of Zuul — Campus Adventure</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-    <style>
-        *{box-sizing:border-box;margin:0;padding:0}
-        :root{
-            --bg-deep:#040b14;--bg:#070f1c;--ink:#e8f2ff;--muted:#95aac7;
-            --gold:#f9d05f;--gold2:#f0b830;--blue:#50d0ff;--green:#4ef08a;--red:#ff7088;
-            --panel:rgba(10,20,35,0.78);--line:rgba(140,210,255,0.13);--surface:rgba(14,28,48,0.92);
-            --glass:rgba(12,22,38,0.65);--glass-border:rgba(255,255,255,0.06);
-            --grad-gold:linear-gradient(135deg,#f9d05f,#f0a820);--grad-blue:linear-gradient(135deg,#50d0ff,#3080e0);
-            --shadow-sm:0 2px 8px rgba(0,0,0,0.3);--shadow-md:0 8px 32px rgba(0,0,0,0.45);--shadow-lg:0 16px 48px rgba(0,0,0,0.55);
-        }
-
-        body{font-family:"Inter","Segoe UI","Microsoft YaHei",Arial,sans-serif;background:var(--bg-deep);color:var(--ink);overflow:hidden;height:100vh}
-        #app{height:100vh;display:grid;grid-template-rows:auto 1fr auto;background:radial-gradient(ellipse at 50% 0%,rgba(50,150,220,0.04),transparent 60%)}
-
-        /* LOGIN PAGE */
-        .login-page{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:linear-gradient(170deg,#030a16 0%,#081428 35%,#0c1a32 65%,#060f20 100%)}
-        .login-page::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 45% 25%,rgba(80,200,255,0.06),transparent 55%),radial-gradient(ellipse at 75% 65%,rgba(249,208,95,0.04),transparent 45%),radial-gradient(ellipse at 20% 80%,rgba(100,150,255,0.03),transparent 40%);pointer-events:none}
-        .login-container{text-align:center;z-index:1;backdrop-filter:blur(2px);padding:40px;border-radius:20px;background:rgba(8,18,32,0.5);border:1px solid var(--glass-border);box-shadow:var(--shadow-lg)}
-        .login-logo{font-size:80px;margin-bottom:8px;animation:bob 2.5s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(249,208,95,0.3))}
-        .login-container h1{font-size:50px;letter-spacing:3px;background:linear-gradient(180deg,#fff 30%,#90c8f0 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;margin-bottom:6px}
-        .login-container .tagline{color:var(--gold);font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:4px;margin-bottom:24px;text-shadow:0 0 12px rgba(249,208,95,0.2)}
-        .login-tabs{display:flex;gap:0;justify-content:center;margin-bottom:22px}
-        .login-tab{padding:13px 38px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02);color:var(--muted);font-size:16px;font-weight:900;cursor:pointer;transition:all 200ms ease}
-        .login-tab:first-child{border-radius:10px 0 0 10px}.login-tab:last-child{border-radius:0 10px 10px 0}
-        .login-tab.active{background:rgba(249,208,95,0.1);color:var(--gold);border-color:rgba(249,208,95,0.4);box-shadow:0 0 20px rgba(249,208,95,0.08)}
-        .login-input-wrap input{width:350px;height:58px;padding:0 20px;border:2px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.35);color:#f8fbff;font:inherit;font-size:18px;border-radius:12px;outline:none;text-align:center;transition:all 250ms ease}
-        .login-input-wrap input:focus{border-color:var(--gold);box-shadow:0 0 0 8px rgba(249,208,95,0.05),0 0 30px rgba(249,208,95,0.08)}
-        .login-input-wrap input::placeholder{color:rgba(145,167,199,0.35)}
-        .btn-login{padding:15px 48px;margin-top:10px;border:0;background:var(--grad-gold);color:#1d1300;font-weight:900;font-size:18px;border-radius:12px;cursor:pointer;transition:all 200ms ease;box-shadow:0 4px 20px rgba(240,168,32,0.25)}
-        .btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(240,168,32,0.4)}.btn-login:disabled{opacity:0.35;cursor:not-allowed;filter:none;transform:none;box-shadow:none}
-        .login-hint{margin-top:18px;color:rgba(145,167,199,0.4);font-size:13px;line-height:1.7}
-        .login-error{margin-top:10px;color:var(--red);font-size:13px;min-height:18px}
-
-        /* GUIDE */
-        .guide-overlay{position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.9);backdrop-filter:blur(10px)}
-        .guide-card{width:540px;max-height:82vh;overflow-y:auto;padding:36px 40px;border:1px solid rgba(249,208,95,0.3);background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg),0 0 60px rgba(249,208,95,0.06);text-align:center}
-        .guide-card h2{font-size:28px;color:var(--gold);margin-bottom:20px}
-        .guide-dots{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
-        .guide-dot{width:14px;height:14px;border-radius:50%;background:rgba(140,210,255,0.15);transition:all 250ms ease}
-        .guide-dot.active{background:var(--gold);box-shadow:0 0 14px rgba(249,208,95,0.7)}
-        .guide-content{text-align:left;margin-bottom:22px}
-        .guide-content h3{font-size:18px;color:var(--ink);margin-bottom:10px}
-        .guide-content p{font-size:14px;color:var(--muted);line-height:1.85;margin-bottom:6px}
-        .guide-content .tip{display:inline-block;padding:5px 12px;margin:2px;border:1px solid rgba(249,208,95,0.18);background:rgba(249,208,95,0.05);color:#ffe7a8;font-size:13px;border-radius:5px;font-weight:700}
-        .guide-nav{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-        .btn-guide{padding:10px 28px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);color:var(--gold);font-weight:900;font-size:14px;border-radius:8px;cursor:pointer;transition:all 150ms ease}
-        .btn-guide:hover{background:rgba(249,208,95,0.1);border-color:rgba(249,208,95,0.3);transform:translateY(-1px)}
-        .btn-guide.primary{background:var(--grad-gold);color:#1d1300;border:0;box-shadow:0 4px 16px rgba(240,168,32,0.3)}
-
-        /* TOP HUD */
-        .top-hud{display:grid;grid-template-columns:190px 1fr auto;gap:8px;padding:8px 14px;z-index:20;background:linear-gradient(180deg,rgba(4,11,20,0.98),rgba(7,15,28,0.72));border-bottom:1px solid var(--glass-border);backdrop-filter:blur(12px)}
-        .hud-title h1{font-size:20px;letter-spacing:1.5px;background:linear-gradient(180deg,#e8f2ff,#90c0e0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1}
-        .hud-title .sub{color:var(--gold);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:2px}
-        .hud-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
-        .st{background:var(--glass);border:1px solid var(--glass-border);border-radius:6px;padding:7px 9px;text-align:center;position:relative;backdrop-filter:blur(8px);transition:all 200ms ease}
-        .st .l{font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:800;letter-spacing:1px}.st .v{font-size:17px;font-weight:900}
-        .st.critical{border-color:var(--red);animation:criticalPulse 0.7s ease-in-out infinite}
-        .hud-badges{display:flex;align-items:center;justify-content:center;gap:4px}
-        .badge{font-size:12px;background:rgba(249,208,95,0.2);padding:2px 4px;border-radius:4px}
-        @keyframes criticalPulse{0%,100%{box-shadow:0 0 0 rgba(255,112,136,0)}50%{box-shadow:0 0 18px rgba(255,112,136,0.6),inset 0 0 20px rgba(255,112,136,0.08)}}
-        .v.gold{color:var(--gold)}.v.green{color:var(--green)}.v.blue{color:var(--blue)}.v.red{color:var(--red)}
-        .bar{height:3px;margin-top:3px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden}
-        .bar-fill{height:100%;border-radius:2px;transition:width 400ms ease}
-        .bar-fill.hp{background:linear-gradient(90deg,var(--green),#a0ffc0);box-shadow:0 0 6px rgba(78,240,138,0.25)}.bar-fill.wt{background:linear-gradient(90deg,var(--blue),#a0e0ff);box-shadow:0 0 6px rgba(80,208,255,0.25)}
-        .login-btn{padding:7px 14px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:var(--gold);font-size:11px;font-weight:900;border-radius:6px;cursor:pointer;white-space:nowrap;transition:all 150ms ease}
-        .login-btn:hover{background:rgba(249,208,95,0.12);border-color:rgba(249,208,95,0.35);transform:translateY(-1px)}.login-btn.logged{background:rgba(78,240,138,0.1);border-color:rgba(78,240,138,0.3);color:var(--green)}
-
-        /* MAIN */
-        .main-area{position:relative;min-height:0;overflow:hidden}
-        .room-scene{width:100%;height:100%;display:block}
-
-        /* BACKPACK BAR */
-        .backpack-bar{position:absolute;left:14px;top:14px;z-index:19;display:flex;flex-direction:column;gap:5px;max-height:58vh;overflow-y:auto;width:205px}
-        .bp-title{font-size:13px;color:var(--gold);font-weight:900;margin-bottom:2px;background:var(--glass);border:1px solid var(--glass-border);padding:6px 12px;border-radius:6px;backdrop-filter:blur(8px)}
-        .bp-item{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--glass);border:1px solid var(--glass-border);border-radius:7px;cursor:default;transition:all 200ms ease;backdrop-filter:blur(8px)}
-        .bp-item:hover{border-color:rgba(249,208,95,0.4);background:rgba(249,208,95,0.06);transform:translateX(2px)}
-        .bp-icon{width:36px;height:36px;display:grid;place-items:center;flex-shrink:0;border-radius:6px;background:rgba(255,255,255,0.03)}
-        .bp-icon svg{width:30px;height:30px}
-        .bp-info{min-width:0;flex:1}
-        .bp-name{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .bp-wt{font-size:10px;color:var(--muted)}
-        .bp-acts{display:flex;gap:4px;flex-shrink:0}
-        .bp-btn{height:28px;padding:0 12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:var(--gold);font-size:11px;font-weight:900;border-radius:5px;cursor:pointer;transition:all 150ms ease}
-        .bp-btn:hover{background:rgba(249,208,95,0.15);border-color:rgba(249,208,95,0.4);transform:translateY(-1px)}
-        .bp-btn.drop{border-color:rgba(255,112,136,0.25);color:var(--red);background:rgba(255,112,136,0.04)}
-        .bp-btn.drop:hover{background:rgba(255,112,136,0.15);border-color:rgba(255,112,136,0.45)}
-        .bp-btn.eat{border-color:rgba(78,240,138,0.25);color:var(--green);background:rgba(78,240,138,0.04)}
-        .bp-btn.eat:hover{background:rgba(78,240,138,0.15);border-color:rgba(78,240,138,0.45)}
-        .bp-empty{color:#556a85;font-size:11px;font-style:italic;padding:8px 12px;background:var(--glass);border-radius:6px;border:1px solid var(--glass-border)}
-
-        /* D-PAD */
-        .dpad{position:absolute;right:18px;bottom:110px;z-index:20;display:grid;grid-template-columns:64px 64px 64px;grid-template-rows:64px 64px 64px;gap:4px;filter:drop-shadow(var(--shadow-md))}
-        .dpad-btn{width:64px;height:64px;border:1px solid rgba(255,255,255,0.08);background:var(--glass);color:#cfe7ff;font-size:26px;font-weight:900;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all 180ms ease;user-select:none;backdrop-filter:blur(6px)}
-        .dpad-btn:hover:not(:disabled){background:rgba(249,208,95,0.12);border-color:rgba(249,208,95,0.5);color:var(--gold);transform:translateY(-2px);box-shadow:0 6px 20px rgba(249,208,95,0.15)}
-        .dpad-btn:active:not(:disabled){transform:scale(0.92);background:rgba(249,208,95,0.2)}
-        .dpad-btn:disabled{opacity:0.35;cursor:pointer;border-color:rgba(255,112,136,0.2);background:rgba(255,112,136,0.04);color:rgba(255,112,136,0.45)}
-        .dpad-btn:disabled:hover{background:rgba(255,112,136,0.1);border-color:rgba(255,112,136,0.4);color:var(--red);transform:translateY(-1px)}
-        .dpad-btn:disabled:active{transform:scale(0.92)}
-        .dpad-center{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);display:grid;place-items:center;font-size:10px;color:rgba(255,255,255,0.2)}
-        .dpad-risk{font-size:10px;color:rgba(255,112,136,0.45);text-align:center;margin-top:1px}
-
-        /* HP change animation */
-        .hp-change{position:absolute;z-index:30;font-size:24px;font-weight:900;pointer-events:none;animation:hpFloat 1s ease-out forwards}
-        .hp-change.up{color:var(--green)}.hp-change.down{color:var(--red)}
-        @keyframes hpFloat{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-36px)}}
-        .screen-flash{position:fixed;inset:0;z-index:90;pointer-events:none;animation:flash 400ms ease-out forwards}
-        .screen-flash.dmg{background:rgba(251,113,133,0.12)}.screen-flash.heal{background:rgba(74,222,128,0.08)}
-        @keyframes flash{0%{opacity:1}100%{opacity:0}}
-
-        /* Minimap */
-        .minimap{position:absolute;top:12px;right:12px;z-index:15;width:182px;height:142px;background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;overflow:hidden;box-shadow:var(--shadow-md);backdrop-filter:blur(10px)}
-        .minimap svg{width:100%;height:100%}
-        .mm-node{transition:fill 400ms ease,stroke 400ms ease;cursor:default}
-        .mm-node.visited{cursor:pointer}.mm-node.visited:hover{filter:brightness(1.5)}
-        .mm-line{stroke:rgba(140,210,255,0.06);stroke-width:1.4;transition:stroke 400ms ease}
-        .mm-line.lit{stroke:rgba(140,210,255,0.25)}
-        .mm-label{font-size:7px;font-weight:700;text-anchor:middle;pointer-events:none}
-
-        /* Speech bubble */
-        .speech-bubble{position:absolute;z-index:18;max-width:310px;padding:11px 15px;background:var(--surface);border:1px solid rgba(249,208,95,0.4);border-radius:10px;color:#fff7d6;font-size:14px;line-height:1.55;font-weight:600;box-shadow:var(--shadow-lg),0 0 20px rgba(249,208,95,0.08);animation:bubbleIn 300ms ease;pointer-events:none}
-        .speech-bubble::after{content:'';position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:9px solid rgba(249,208,95,0.4)}
-        @keyframes bubbleIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-
-        /* Float item */
-        .float-item{position:absolute;z-index:25;font-size:36px;pointer-events:none;transition:all 500ms cubic-bezier(0.25,0.8,0.25,1.2);filter:drop-shadow(0 4px 8px rgba(247,201,95,0.6))}
-
-        /* Exit labels */
-        .exit-label{position:absolute;z-index:13;color:rgba(255,255,255,0.3);font-size:13px;font-weight:800;cursor:pointer;padding:5px 12px;border-radius:5px;transition:all 180ms ease;border:1px solid transparent}
-        .exit-label:hover{color:var(--gold);background:rgba(249,208,95,0.07);border-color:rgba(249,208,95,0.18);transform:translateY(-1px)}
-
-        /* Bottom */
-        .bottom-area{display:grid;grid-template-columns:1fr 330px;gap:8px;padding:8px 14px;background:rgba(4,11,20,0.85);border-top:1px solid var(--glass-border);height:130px;min-height:0;backdrop-filter:blur(8px)}
-        .story-log{background:var(--glass);border:1px solid var(--glass-border);border-radius:7px;display:flex;flex-direction:column;min-height:0;overflow:hidden;backdrop-filter:blur(6px)}
-        .log-head{display:flex;align-items:center;gap:8px;padding:0 12px;height:30px;border-bottom:1px solid var(--glass-border);flex-shrink:0;background:rgba(255,255,255,0.02)}
-        .log-head h3{font-size:11px;font-weight:900;text-transform:uppercase}.log-head .badge{margin-left:auto;min-width:20px;height:20px;line-height:20px;text-align:center;border-radius:10px;background:rgba(249,208,95,0.12);color:var(--gold);font-size:10px;font-weight:900;padding:0 6px}
-        .log-body{flex:1;overflow-y:auto;padding:5px 12px;font-family:"Cascadia Mono","Consolas","Microsoft YaHei",monospace;font-size:11px;line-height:1.55;color:#c9dcf7;background:rgba(0,0,0,0.15)}
-        .log-body .cmd{color:var(--gold);font-weight:700}.log-body .sys{color:var(--muted)}.log-body .err{color:var(--red)}
-        .cmd-panel{background:var(--glass);border:1px solid var(--glass-border);border-radius:7px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;justify-content:center;backdrop-filter:blur(6px)}
-        .cmd-row{display:grid;grid-template-columns:1fr auto;gap:5px}
-        .cmd-input{height:34px;padding:0 12px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.3);color:#f8fbff;font:inherit;font-size:12px;border-radius:6px;outline:none;transition:all 200ms ease}
-        .cmd-input:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(249,208,95,0.06)}
-        .btn-run{width:58px;border:0;background:var(--grad-gold);color:#1d1300;font-weight:900;font-size:12px;border-radius:6px;cursor:pointer;transition:all 150ms ease;box-shadow:0 2px 10px rgba(240,168,32,0.2)}
-        .btn-run:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(240,168,32,0.35)}.btn-run:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none}
-        .quick-btns{display:flex;flex-wrap:wrap;gap:4px}
-        .qbtn{height:25px;padding:0 10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03);color:#cfe7ff;font-size:10px;font-weight:800;border-radius:4px;cursor:pointer;transition:all 120ms ease}
-        .qbtn:hover{background:rgba(80,200,255,0.1);border-color:rgba(80,200,255,0.2);transform:translateY(-1px)}.qbtn:disabled{opacity:0.2;cursor:not-allowed}
-        .err-msg{color:var(--red);font-size:10px;font-weight:700;min-height:14px}
-
-        /* Overlays */
-        .overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.88);backdrop-filter:blur(14px)}
-        .overlay-card{text-align:center;padding:40px 50px;border:1px solid rgba(249,208,95,0.3);background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg),0 0 80px rgba(249,208,95,0.08)}
-        .overlay-card h2{font-size:34px;margin-bottom:10px}.overlay-card p{color:var(--muted);margin-bottom:16px;font-size:14px;line-height:1.65}
-        .btn-restart{padding:10px 28px;border:0;background:var(--grad-gold);color:#1d1300;font-weight:900;font-size:15px;border-radius:10px;cursor:pointer;transition:all 150ms ease;box-shadow:0 4px 20px rgba(240,168,32,0.3)}
-        .btn-restart:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(240,168,32,0.45)}
-
-        .toast-msg{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:80;padding:8px 22px;border:1px solid rgba(247,201,95,0.4);background:rgba(8,17,31,0.92);color:#fff7d6;font-weight:900;font-size:13px;border-radius:6px;animation:toastIn 220ms ease;pointer-events:none}
-        @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-        @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-        .bobbing{animation:bob 1.2s ease-in-out infinite}
-        @keyframes bagAnim{0%{transform:scale(1)}30%{transform:scale(1.06)}100%{transform:scale(1)}}
-        .bag-flash{animation:bagAnim 400ms ease}
-
-        /* Leaderboard */
-        .lb-overlay{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.88);backdrop-filter:blur(14px)}
-        .lb-card{width:500px;max-height:78vh;overflow-y:auto;padding:36px 40px;border:1px solid rgba(249,208,95,0.3);background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg),0 0 60px rgba(249,208,95,0.06);text-align:center}
-        .lb-card h2{font-size:28px;color:var(--gold);margin-bottom:20px}
-        .lb-row{display:grid;grid-template-columns:40px 1fr 80px 60px 80px;gap:8px;padding:10px 12px;border-bottom:1px solid var(--glass-border);align-items:center;font-size:13px;text-align:left}
-        .lb-row.header{color:var(--muted);font-size:11px;font-weight:900;text-transform:uppercase;border-bottom:2px solid var(--gold)}
-        .lb-rank{font-weight:900;text-align:center}
-        .lb-rank.top1{color:var(--gold);font-size:20px}.lb-rank.top2{color:#c0c0c0;font-size:17px}.lb-rank.top3{color:#cd7f32;font-size:15px}
-        .lb-name{font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .lb-score{color:var(--gold);font-weight:900;text-align:right}.lb-hp{color:var(--green);text-align:right}.lb-badge{text-align:center}
-        .lb-empty{color:var(--muted);padding:30px;font-size:14px}
-        .lb-loading{color:var(--muted);padding:30px;font-size:14px}
-        .btn-close{position:absolute;top:12px;right:16px;background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer;transition:all 150ms ease}
-        .btn-close:hover{color:var(--ink);transform:scale(1.15)}
-
-        /* Loading spinner */
-        .loading-spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(249,208,95,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.6s linear infinite;margin-right:6px;vertical-align:middle}
-        @keyframes spin{to{transform:rotate(360deg)}}
-
-        @media(max-width:860px){.top-hud{grid-template-columns:1fr}.hud-stats{grid-template-columns:repeat(3,1fr)}.bottom-area{grid-template-columns:1fr}.cmd-panel{display:none}.dpad{right:4px;bottom:50px;grid-template-columns:44px 44px 44px;grid-template-rows:44px 44px 44px}.dpad-btn{width:44px;height:44px;font-size:16px}.dpad-center{width:44px;height:44px}.backpack-bar{width:150px}}
-    </style>
-</head>
-<body>
-<div id="app" @keydown="onKey" tabindex="0">
-    <!-- ═══ LOGIN PAGE ═══ -->
-    <div class="login-page" v-if="gamePhase==='login'">
-        <div class="login-container">
-            <div class="login-logo">🏫</div>
-            <h1>World of Zuul</h1>
-            <div class="tagline">· Campus Adventure ·</div>
-            <div class="login-tabs">
-                <button class="login-tab" :class="{active:loginMode==='register'}" @click="loginMode='register'">📝 注册</button>
-                <button class="login-tab" :class="{active:loginMode==='signin'}" @click="loginMode='signin'">🔑 登录</button>
-            </div>
-            <div class="login-input-wrap"><input v-model="loginName" :placeholder="loginMode==='register'?'输入新用户名注册...':'输入已有用户名登录...'" @keyup.enter="doLogin" autofocus></div>
-            <div style="margin-top:8px"><button class="btn-login" @click="doLogin" :disabled="!loginName.trim()">{{ loginMode==='register' ? '📝 注册并进入' : '🔑 登录并进入' }}</button></div>
-            <div class="login-hint">
-                <span v-if="loginMode==='register'">输入新用户名即可注册，数据保存在本地数据库</span>
-                <span v-else>输入已有用户名登录，加载你的存档继续冒险</span>
-            </div>
-            <div class="login-error">{{ loginError }}</div>
-        </div>
-    </div>
-
-    <!-- ═══ GAME GUIDE ═══ -->
-    <div class="guide-overlay" v-if="gamePhase==='guide'">
-        <div class="guide-card">
-            <h2>{{guideTitle}}</h2>
-            <div class="guide-dots"><div class="guide-dot" v-for="i in 5" :key="i" :class="{active:guideStep===i}"></div></div>
-            <div class="guide-content" v-html="guideContent"></div>
-            <div class="guide-nav">
-                <button class="btn-guide" v-if="guideStep>1" @click="guideStep--">← 上一步</button>
-                <button class="btn-guide" v-if="guideStep<5" @click="guideStep++">下一步 →</button>
-                <button class="btn-guide primary" v-if="guideStep===5" @click="startGame">🎮 开始冒险！</button>
-                <button class="btn-guide" style="border-color:rgba(255,255,255,0.06);color:var(--muted)" @click="startGame">⏭ 跳过</button>
-            </div>
-        </div>
-    </div>
-
-    <template v-if="gamePhase==='playing'">
-    <!-- ═══ TOP HUD ═══ -->
-    <header class="top-hud">
-        <div class="hud-title"><div class="sub">🏫 Campus Adventure</div><h1>World of Zuul</h1></div>
-        <div class="hud-stats">
-            <div class="st"><div class="l">冒险者</div><div class="v gold">{{ state.playerName||'Adventurer' }}</div></div>
-            <div class="st"><div class="l">分数</div><div class="v gold">{{ state.score||0 }}</div></div>
-            <div class="st" :class="{critical:state.health<=25}"><div class="l">生命值</div><div class="v" :class="hpCls">{{ state.health||0 }}</div><div class="bar"><div class="bar-fill hp" :style="{width:hpPct+'%'}"></div></div></div>
-            <div class="st"><div class="l">负重</div><div class="v blue">{{ fmtW(state.currentWeight) }}/{{ fmtW(state.maxWeight) }}</div><div class="bar"><div class="bar-fill wt" :style="{width:wtPct+'%'}"></div></div></div>
-            <div class="st"><div class="l">任务</div><div class="v gold" style="font-size:11px">{{ questShort }}</div></div>
-            <div class="st hud-badges" v-if="achievements.length"><span v-for="a in achievements" :key="a.id" class="badge">{{ a.icon }}</span></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;justify-content:center">
-            <div style="display:flex;gap:4px;align-items:center">
-                <button class="login-btn" @click="showLeaderboard=true;fetchLeaderboard()" title="排行榜" style="font-size:18px">🏆</button>
-                <button class="login-btn" :class="{logged:state.loggedIn}" @click="gamePhase='login'" :title="state.loggedIn?'已登录，点击切换账号':'点击登录'">{{ state.loggedIn ? '👤 '+state.playerName : '🔑 登录' }}</button>
-                <button class="login-btn" style="padding:6px 8px;font-size:14px" @click="showSettings=!showSettings" title="设置">⚙</button>
-            </div>
-            <div v-if="showSettings" style="position:absolute;top:50px;right:8px;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
-                <button @click="togglePause" style="padding:8px 12px;border:0;background:transparent;color:var(--ink);font-size:12px;font-weight:700;cursor:pointer;text-align:left;border-radius:4px;transition:all 100ms ease" onmouseover="this.style.background='rgba(247,201,95,0.1)'" onmouseout="this.style.background='transparent'">{{ paused ? '▶ 继续游戏' : '⏸ 暂停游戏' }}</button>
-                <button @click="doRestart" style="padding:8px 12px;border:0;background:transparent;color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;text-align:left;border-radius:4px;transition:all 100ms ease" onmouseover="this.style.background='rgba(247,201,95,0.1)'" onmouseout="this.style.background='transparent'">🔄 重新开始</button>
-                <button @click="doQuit" style="padding:8px 12px;border:0;background:transparent;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;text-align:left;border-radius:4px;transition:all 100ms ease" onmouseover="this.style.background='rgba(251,113,133,0.1)'" onmouseout="this.style.background='transparent'">🚪 退出登录</button>
-            </div>
-            <span v-if="!state.loggedIn" style="color:var(--muted);font-size:8px">登录后可使用存档</span>
-        </div>
-    </header>
-
-    <!-- ═══ MAIN ═══ -->
-    <div class="main-area" ref="mainArea">
-        <!-- HP change indicator -->
-        <div v-if="hpChange" :class="['hp-change',hpChange.up?'up':'down']" style="left:50%;top:8%">{{ hpChange.up?'+':'' }}{{ hpChange.val }} HP</div>
-        <!-- Screen flash -->
-        <div v-if="screenFlash" :class="['screen-flash',screenFlash]"></div>
-        <svg class="room-scene" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <filter id="shadow"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.35"/></filter>
-                <filter id="glowGold"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#f7c95f" flood-opacity="0.5"/></filter>
-                <filter id="glowCookie"><feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#fbbf24" flood-opacity="0.6"/></filter>
-                <filter id="glowTask"><feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#fb7185" flood-opacity="0.7"/></filter>
-                <filter id="glowCrystal"><feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#c084fc" flood-opacity="0.7"/></filter>
-                <radialGradient id="portalGrad"><stop offset="0%" stop-color="rgba(192,132,252,0.55)"/><stop offset="60%" stop-color="rgba(139,92,246,0.15)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
-                <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4a90c4"/><stop offset="100%" stop-color="#87ceeb"/></linearGradient>
-            </defs>
-
-            <!-- ═══ ROOM: OUTSIDE ═══ -->
-            <g v-if="currentRoomKey==='outside'">
-                <rect width="800" height="520" fill="#87ceeb"/><rect x="0" y="80" width="800" height="440" fill="url(#skyGrad)"/>
-                <g fill="#fff" opacity="0.8"><ellipse cx="130" cy="55" rx="55" ry="18"/><ellipse cx="180" cy="48" rx="40" ry="13"/><ellipse cx="560" cy="42" rx="50" ry="16"/><ellipse cx="610" cy="36" rx="36" ry="11"/></g>
-                <circle cx="730" cy="65" r="38" fill="#fff8d6" opacity="0.9"/><circle cx="730" cy="65" r="55" fill="rgba(255,248,214,0.18)"/>
-                <rect x="0" y="320" width="800" height="200" fill="#4a8035"/><rect x="0" y="320" width="800" height="7" fill="#5a9045"/>
-                <rect x="260" y="340" width="280" height="180" fill="#a09070" rx="4"/><rect x="0" y="395" width="260" height="50" fill="#a09070"/><rect x="540" y="395" width="260" height="50" fill="#a09070"/>
-                <rect x="342" y="200" width="20" height="140" rx="4" fill="#8b7d6b"/><rect x="438" y="200" width="20" height="140" rx="4" fill="#8b7d6b"/>
-                <rect x="330" y="330" width="140" height="12" rx="4" fill="#9b8b7b"/><path d="M362,270 Q400,175 438,270" fill="none" stroke="#d4b896" stroke-width="4.5"/>
-                <rect x="355" y="252" width="90" height="15" rx="4" fill="#b22222"/><text x="400" y="262" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">武汉理工大学</text>
-                <g><rect x="70" y="275" width="10" height="60" rx="4" fill="#5c3a1e"/><circle cx="75" cy="255" r="35" fill="#2a5820"/><circle cx="60" cy="262" r="22" fill="#306828"/></g>
-                <g><rect x="715" y="270" width="10" height="65" rx="4" fill="#5c3a1e"/><circle cx="720" cy="250" r="38" fill="#2a5820"/><circle cx="705" cy="258" r="25" fill="#306828"/></g>
-                <rect x="530" y="265" width="65" height="70" rx="4" fill="rgba(180,170,160,0.4)"/><text x="563" y="310" fill="rgba(255,255,255,0.3)" font-size="7" text-anchor="middle">Theater →</text>
-                <rect x="55" y="290" width="50" height="45" rx="4" fill="rgba(170,130,110,0.3)"/><text x="80" y="322" fill="rgba(255,255,255,0.25)" font-size="7" text-anchor="middle">← Pub</text>
-                <!-- NPC: Guard -->
-                <g transform="translate(375,270)" filter="url(#shadow)" @click="talkToNPC('guard')" style="cursor:pointer"><ellipse cx="22" cy="46" rx="18" ry="5" fill="rgba(0,0,0,0.25)"/><rect x="14" y="33" width="8" height="15" rx="3" fill="#1a1a2a"/><rect x="22" y="33" width="8" height="15" rx="3" fill="#1a1a2a"/><rect x="8" y="16" width="28" height="21" rx="6" fill="#2a3a5a"/><circle cx="22" cy="6" r="11" fill="#f5d0b0"/><circle cx="18" cy="4" r="2" fill="#2a1a0a"/><circle cx="26" cy="4" r="2" fill="#2a1a0a"/><path d="M18,10 Q22,13 26,10" fill="none" stroke="#c08060" stroke-width="1"/><rect x="15" y="-2" width="14" height="5" rx="3" fill="#1a2a3a"/><rect x="17" y="-5" width="10" height="4" rx="2" fill="#2a3a5a"/><text x="22" y="66" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="800">Guard</text></g>
-                <g v-if="hasRoomItem('campus_map')" transform="translate(300,365)" filter="url(#shadow)" @click="runCmd('take campus_map')" style="cursor:pointer"><rect x="0" y="6" width="20" height="12" rx="3" fill="#f5e6c8"/><circle cx="5" cy="6" r="4" fill="#d4c4a0"/><circle cx="15" cy="6" r="4" fill="#d4c4a0"/><rect x="3" y="2" width="14" height="6" rx="2" fill="#e8d4a8"/><text x="10" y="26" fill="#aaa" font-size="7" text-anchor="middle">map</text></g>
-                <g v-if="hasRoomItem('welcome_brochure')" transform="translate(445,358)" filter="url(#shadow)" @click="runCmd('take welcome_brochure')" style="cursor:pointer"><rect x="0" y="4" width="24" height="16" rx="3" fill="#fff8e8"/><rect x="2" y="6" width="20" height="3" rx="1" fill="#dde"/><rect x="2" y="12" width="14" height="3" rx="1" fill="#eef"/><text x="12" y="28" fill="#aaa" font-size="7" text-anchor="middle">brochure</text></g>
-                <!-- Treasure Chest for task_item submission -->
-                <g transform="translate(365,415)" filter="url(#glowGold)" @click="submitTask" style="cursor:pointer">
-                    <!-- Chest glow -->
-                    <rect x="-10" y="-5" width="80" height="70" rx="12" fill="rgba(247,201,95,0.08)" stroke="#f7c95f" stroke-width="1.5" stroke-dasharray="5 3">
-                        <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.5s" repeatCount="indefinite"/>
-                    </rect>
-                    <!-- Chest body -->
-                    <rect x="4" y="18" width="52" height="30" rx="5" fill="#8b6914" stroke="#6b4910" stroke-width="2"/>
-                    <!-- Chest lid -->
-                    <path d="M0,20 Q30,0 60,20" fill="#a07818" stroke="#6b4910" stroke-width="2"/>
-                    <!-- Gold trim -->
-                    <rect x="4" y="28" width="52" height="3" fill="#f7c95f" opacity="0.6"/>
-                    <!-- Lock -->
-                    <circle cx="30" cy="34" r="5" fill="#f7c95f" stroke="#b08010" stroke-width="1.5"/>
-                    <rect x="28" y="34" width="4" height="4" fill="#1a1a1a"/>
-                    <!-- Label -->
-                    <text x="30" y="60" text-anchor="middle" fill="#f7c95f" font-size="8" font-weight="800">📦 提交箱</text>
-                    <text x="30" y="72" text-anchor="middle" fill="rgba(247,201,95,0.45)" font-size="6">放入 task_item</text>
-                </g>
-            </g>
-
-            <!-- ═══ ROOM: THEATER ═══ -->
-            <g v-if="currentRoomKey==='theater'">
-                <rect width="800" height="520" fill="#15101a"/>
-                <rect x="30" y="310" width="740" height="20" rx="4" fill="#3a2518"/><rect x="15" y="338" width="770" height="20" rx="4" fill="#2a1a10"/><rect x="0" y="366" width="800" height="20" rx="4" fill="#3a2518"/><rect x="0" y="394" width="800" height="20" rx="4" fill="#2a1a10"/><rect x="0" y="422" width="800" height="20" rx="4" fill="#3a2518"/>
-                <rect x="180" y="195" width="440" height="115" rx="7" fill="#2a2018"/><rect x="280" y="30" width="240" height="140" rx="5" fill="#e0e4e8"/><text x="400" y="110" text-anchor="middle" fill="#8899aa" font-size="32">📽</text>
-                <rect x="320" y="168" width="160" height="30" rx="5" fill="#4a3518"/>
-                <g transform="translate(375,132)" filter="url(#shadow)" @click="talkToNPC('lecturer')" style="cursor:pointer"><ellipse cx="22" cy="48" rx="17" ry="4" fill="rgba(0,0,0,0.25)"/><rect x="13" y="34" width="8" height="16" rx="2" fill="#1a1a2a"/><rect x="23" y="34" width="8" height="16" rx="2" fill="#1a1a2a"/><rect x="8" y="16" width="28" height="22" rx="6" fill="#3a3030"/><circle cx="22" cy="6" r="11" fill="#f5d0b0"/><circle cx="18" cy="4" r="2" fill="#2a1a0a"/><circle cx="26" cy="4" r="2" fill="#2a1a0a"/><path d="M17,10 L27,10" stroke="#c08060" stroke-width="0.8"/><rect x="14" y="-2" width="16" height="3" rx="2" fill="#2a1a0a"/><text x="22" y="68" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="800">Lecturer</text></g>
-                <g v-if="hasRoomItem('notebook')" transform="translate(150,288)" filter="url(#shadow)" @click="runCmd('take notebook')" style="cursor:pointer"><rect x="0" y="2" width="18" height="22" rx="3" fill="#3a6aaa"/><rect x="2" y="5" width="14" height="2" rx="1" fill="#4a7aba"/><rect x="2" y="16" width="14" height="2" rx="1" fill="#4a7aba"/><text x="9" y="32" fill="#aaa" font-size="7" text-anchor="middle">notebook</text></g>
-                <g v-if="hasRoomItem('pen')" transform="translate(610,285)" filter="url(#shadow)" @click="runCmd('take pen')" style="cursor:pointer"><rect x="3" y="0" width="7" height="24" rx="3" fill="#1a4a8a"/><rect x="4" y="0" width="5" height="9" rx="2" fill="#a0b0c0"/><polygon points="4,24 9,24 6.5,30" fill="#c0a030"/><text x="6" y="34" fill="#aaa" font-size="7" text-anchor="middle">pen</text></g>
-            </g>
-
-            <!-- ═══ ROOM: PUB ═══ -->
-            <g v-if="currentRoomKey==='pub'">
-                <rect width="800" height="520" fill="#1a0e04"/><rect x="0" y="0" width="800" height="55" fill="#120804"/><rect x="0" y="445" width="800" height="75" fill="#120804"/>
-                <rect x="0" y="55" width="800" height="390" fill="#2a1808"/>
-                <line v-for="i in 9" :key="'fb'+i" :x1="0" :y1="55+i*43" x2="800" :y2="55+i*43" stroke="rgba(0,0,0,0.1)" stroke-width="1.5"/>
-                <rect x="170" y="195" width="460" height="90" rx="7" fill="#4a2a10"/><rect x="170" y="195" width="460" height="12" rx="4" fill="#5a3a1e"/>
-                <g v-for="s in [215,315,415,515]" :key="'st'+s"><rect :x="s" y="285" width="9" height="38" rx="4" fill="#3a2008"/><circle :cx="s+4" :cy="285" r="14" fill="#4a3015"/></g>
-                <rect x="190" y="115" width="55" height="80" rx="4" fill="#3a1a08"/><rect x="200" y="125" width="35" height="6" rx="2" fill="#5a2a10"/><rect x="200" y="145" width="35" height="6" rx="2" fill="#5a2a10"/><rect x="200" y="165" width="35" height="6" rx="2" fill="#5a2a10"/>
-                <rect x="555" y="115" width="55" height="80" rx="4" fill="#3a1a08"/><rect x="565" y="125" width="35" height="6" rx="2" fill="#5a2a10"/><rect x="565" y="145" width="35" height="6" rx="2" fill="#5a2a10"/>
-                <circle cx="400" cy="165" r="110" fill="rgba(251,191,36,0.06)"/><circle cx="400" cy="165" r="55" fill="rgba(251,191,36,0.08)"/>
-                <g transform="translate(385,145)" filter="url(#shadow)" @click="talkToNPC('bartender')" style="cursor:pointer"><ellipse cx="22" cy="48" rx="17" ry="4" fill="rgba(0,0,0,0.25)"/><rect x="13" y="34" width="8" height="16" rx="2" fill="#1a1a2a"/><rect x="23" y="34" width="8" height="16" rx="2" fill="#1a1a2a"/><rect x="8" y="14" width="28" height="24" rx="6" fill="#6a3a10"/><rect x="12" y="16" width="20" height="5" rx="3" fill="#f5f0e0"/><circle cx="22" cy="6" r="11" fill="#f5d0b0"/><circle cx="18" cy="4" r="2" fill="#2a1a0a"/><circle cx="26" cy="4" r="2" fill="#2a1a0a"/><path d="M17,10 Q22,14 27,10" fill="none" stroke="#c08060" stroke-width="1"/><rect x="15" y="-2" width="14" height="4" rx="2" fill="#8b5a20"/><text x="22" y="68" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="800">Bartender</text></g>
-                <g v-if="hasRoomItem('cookie')" transform="translate(270,178)" filter="url(#glowCookie)" @click="runCmd('take cookie')" style="cursor:pointer" class="bobbing"><circle cx="14" cy="10" r="13" fill="#d4a030"/><circle cx="9" cy="5" r="3" fill="#3a1a00"/><circle cx="18" cy="4" r="2.5" fill="#3a1a00"/><circle cx="12" cy="13" r="2.5" fill="#3a1a00"/><text x="14" y="30" fill="#fbbf24" font-size="7" font-weight="800" text-anchor="middle">⭐cookie</text></g>
-                <g v-if="hasRoomItem('energy_drink')" transform="translate(490,178)" filter="url(#shadow)" @click="runCmd('take energy_drink')" style="cursor:pointer"><rect x="0" y="2" width="16" height="22" rx="5" fill="#48a0d0"/><rect x="1" y="5" width="14" height="5" rx="2" fill="#68c0f0"/><rect x="2" y="13" width="12" height="5" rx="2" fill="#3890c0"/><text x="8" y="32" fill="#aaa" font-size="7" text-anchor="middle">drink</text></g>
-            </g>
-
-            <!-- ═══ ROOM: LAB ═══ -->
-            <g v-if="currentRoomKey==='lab'">
-                <rect width="800" height="520" fill="#0a1628"/><rect x="0" y="330" width="800" height="190" fill="#142030"/>
-                <line v-for="i in 5" :key="'gl'+i" :x1="i*160-80" y1="330" :x2="i*160-80" y2="520" stroke="rgba(255,255,255,0.02)" stroke-width="1.5"/>
-                <g transform="translate(18,225)"><rect x="0" y="0" width="30" height="115" rx="4" fill="#1a2a3a"/><circle cx="15" cy="22" r="3.5" fill="#4ade80" opacity="0.8"/><circle cx="15" cy="38" r="3.5" fill="#4ade80" opacity="0.3"/><rect x="5" y="58" width="20" height="7" rx="2" fill="#2a3a4a"/><rect x="5" y="72" width="20" height="7" rx="2" fill="#2a3a4a"/></g>
-                <g transform="translate(55,225)"><rect x="0" y="0" width="30" height="115" rx="4" fill="#1a2a3a"/><circle cx="15" cy="22" r="3.5" fill="#4ade80" opacity="0.6"/><circle cx="15" cy="38" r="3.5" fill="#4ade80" opacity="0.8"/><rect x="5" y="58" width="20" height="7" rx="2" fill="#2a3a4a"/></g>
-                <g v-for="d in [{x:155,y:255},{x:335,y:255},{x:515,y:255}]" :key="'dk'+d.x"><rect :x="d.x" :y="d.y+32" width="95" height="42" rx="5" fill="#2a3a4a"/><rect :x="d.x+8" :y="d.y" width="34" height="30" rx="4" fill="#0a1a2a"/><rect :x="d.x+11" :y="d.y+3" width="28" height="22" fill="rgba(72,200,255,0.12)"/></g>
-                <line x1="400" y1="0" x2="400" y2="28" stroke="#8899aa" stroke-width="2"/><circle cx="400" cy="0" r="4.5" fill="#f87171" opacity="0.9"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite"/></circle>
-                <g transform="translate(365,262)" filter="url(#shadow)" @click="talkToNPC('student')" style="cursor:pointer"><ellipse cx="22" cy="48" rx="16" ry="4" fill="rgba(0,0,0,0.25)"/><rect x="14" y="34" width="7" height="14" rx="2" fill="#1a1a2a"/><rect x="23" y="34" width="7" height="14" rx="2" fill="#1a1a2a"/><rect x="10" y="18" width="24" height="20" rx="6" fill="#1a4a6a"/><circle cx="22" cy="6" r="11" fill="#f5d0b0"/><circle cx="18" cy="4" r="2" fill="#2a1a0a"/><circle cx="26" cy="4" r="2" fill="#2a1a0a"/><path d="M16,10 Q22,15 28,10" fill="none" stroke="#c08060" stroke-width="1"/><rect x="15" y="-1" width="14" height="4" rx="2" fill="#2a1a0a"/><text x="22" y="68" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="800">Student</text></g>
-                <g v-if="hasRoomItem('task_item')" transform="translate(185,230)" filter="url(#glowTask)" @click="runCmd('take task_item')" style="cursor:pointer" class="bobbing"><rect x="0" y="0" width="24" height="16" rx="3" fill="#fff0e0"/><rect x="2" y="2" width="20" height="3" rx="1" fill="#fb7185"/><rect x="3" y="8" width="12" height="3" rx="1" fill="#ddd"/><text x="12" y="26" fill="#fb7185" font-size="7" font-weight="800" text-anchor="middle">⭐task_item</text></g>
-                <g v-if="hasRoomItem('programming_manual')" transform="translate(365,230)" filter="url(#shadow)" @click="runCmd('take programming_manual')" style="cursor:pointer"><rect x="0" y="2" width="20" height="24" rx="3" fill="#c04030"/><rect x="2" y="4" width="16" height="3" rx="1" fill="#d06050"/><rect x="2" y="20" width="16" height="3" rx="1" fill="#d06050"/><text x="10" y="34" fill="#aaa" font-size="7" text-anchor="middle">manual</text></g>
-                <g v-if="hasRoomItem('usb_drive')" transform="translate(545,230)" filter="url(#shadow)" @click="runCmd('take usb_drive')" style="cursor:pointer"><rect x="0" y="4" width="9" height="18" rx="3" fill="#3a3a3a"/><rect x="2" y="0" width="5" height="7" rx="2" fill="#5a5a5a"/><rect x="3.5" y="2" width="2" height="3" fill="#48c8ff" opacity="0.6"/><text x="4" y="30" fill="#aaa" font-size="7" text-anchor="middle">USB</text></g>
-            </g>
-
-            <!-- ═══ ROOM: OFFICE ═══ -->
-            <g v-if="currentRoomKey==='office'">
-                <rect width="800" height="520" fill="#1a1510"/><rect x="0" y="350" width="800" height="170" fill="#2a2018"/>
-                <rect x="540" y="45" width="190" height="145" rx="6" fill="#87ceeb" opacity="0.5"/><rect x="545" y="50" width="85" height="135" fill="#a8d8ea" opacity="0.3"/><rect x="640" y="50" width="85" height="135" fill="#a8d8ea" opacity="0.3"/><line x1="630" y1="50" x2="630" y2="185" stroke="#1a1510" stroke-width="4"/><line x1="545" y1="120" x2="720" y2="120" stroke="#1a1510" stroke-width="3"/>
-                <rect x="28" y="45" width="105" height="185" rx="5" fill="#4a3018"/><rect x="34" y="58" width="93" height="7" rx="2" fill="#5a4020"/><rect x="34" y="86" width="93" height="7" rx="2" fill="#5a4020"/><rect x="34" y="114" width="93" height="7" rx="2" fill="#5a4020"/><rect x="34" y="142" width="93" height="7" rx="2" fill="#5a4020"/>
-                <rect v-for="b in shelfBooks" :key="'bk'+b.x" :x="36+b.x" y="62" :width="b.w" height="22" rx="2" :fill="b.c"/>
-                <rect x="235" y="258" width="270" height="90" rx="6" fill="#4a3018"/><rect x="235" y="258" width="270" height="10" rx="4" fill="#5a4020"/>
-                <rect x="275" y="225" width="50" height="30" rx="4" fill="#1a2a3a"/><text x="300" y="243" text-anchor="middle" fill="rgba(72,200,255,0.5)" font-size="10">💻</text>
-                <g transform="translate(340,200)" filter="url(#shadow)" @click="talkToNPC('admin')" style="cursor:pointer"><ellipse cx="22" cy="48" rx="17" ry="4" fill="rgba(0,0,0,0.25)"/><rect x="13" y="34" width="8" height="14" rx="2" fill="#1a1a2a"/><rect x="23" y="34" width="8" height="14" rx="2" fill="#1a1a2a"/><rect x="8" y="16" width="28" height="22" rx="6" fill="#3a3535"/><circle cx="22" cy="6" r="11" fill="#f5d0b0"/><circle cx="18" cy="4" r="2" fill="#2a1a0a"/><circle cx="26" cy="4" r="2" fill="#2a1a0a"/><path d="M17,10 L27,10" stroke="#c08060" stroke-width="0.8"/><rect x="15" y="-2" width="14" height="3" rx="2" fill="#2a1a0a"/><text x="22" y="68" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="800">Admin</text></g>
-                <g v-if="hasRoomItem('keycard')" transform="translate(425,232)" filter="url(#shadow)" @click="runCmd('take keycard')" style="cursor:pointer"><rect x="0" y="2" width="20" height="14" rx="3" fill="#3a6ab0"/><rect x="2" y="4" width="16" height="3" rx="1" fill="#5a8ad0"/><circle cx="15" cy="12" r="3" fill="#88b8f0"/><text x="10" y="24" fill="#aaa" font-size="7" text-anchor="middle">keycard</text></g>
-                <g v-if="hasRoomItem('report_template')" transform="translate(468,238)" filter="url(#shadow)" @click="runCmd('take report_template')" style="cursor:pointer"><rect x="0" y="0" width="18" height="12" rx="2" fill="#f8f0e0"/><rect x="2" y="2" width="14" height="2" rx="1" fill="#ddd"/><rect x="2" y="7" width="11" height="2" rx="1" fill="#eee"/><text x="9" y="20" fill="#aaa" font-size="7" text-anchor="middle">report</text></g>
-            </g>
-
-            <!-- ═══ ROOM: TELEPORT ═══ -->
-            <g v-if="currentRoomKey==='teleport'">
-                <rect width="800" height="520" fill="#0a0020"/>
-                <circle v-for="p in teleParticles" :key="'tp'+p.i" :cx="p.x" :cy="p.y" :r="p.r" fill="rgba(192,132,252,0.6)"><animate attributeName="cy" :values="p.anim" :dur="p.dur" repeatCount="indefinite"/><animate attributeName="opacity" values="0.2;0.8;0.2" :dur="p.dur" repeatCount="indefinite"/></circle>
-                <g transform="translate(400,220)" filter="url(#glowCrystal)"><ellipse cx="0" cy="0" rx="120" ry="38" fill="none" stroke="#c084fc" stroke-width="3" opacity="0.5"/><ellipse cx="0" cy="0" rx="100" ry="28" fill="none" stroke="#a78bfa" stroke-width="2" opacity="0.45"><animate attributeName="rx" values="100;112;100" dur="3s" repeatCount="indefinite"/></ellipse><circle cx="0" cy="0" r="75" fill="url(#portalGrad)"/><ellipse cx="0" cy="0" rx="55" ry="14" fill="rgba(139,92,246,0.35)"/><path d="M0,-28 Q28,-14 20,2 Q12,12 0,7" fill="none" stroke="#ddd6fe" stroke-width="1.5" opacity="0.5"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="4s" repeatCount="indefinite"/></path></g>
-                <path d="M70,520 L35,175 L400,55 L765,175 L730,520" fill="none" stroke="rgba(139,92,246,0.15)" stroke-width="2.5"/>
-                <polygon points="555,345 570,280 585,345" fill="rgba(139,92,246,0.4)"/><polygon points="570,350 580,302 590,350" fill="rgba(192,132,252,0.3)"/><polygon points="190,335 205,270 220,335" fill="rgba(139,92,246,0.35)"/>
-                <g transform="translate(365,100)" filter="url(#shadow)" @click="talkToNPC('oracle')" style="cursor:pointer"><ellipse cx="28" cy="54" rx="20" ry="5" fill="rgba(0,0,0,0.25)"/><rect x="18" y="38" width="9" height="16" rx="3" fill="#1a0a30"/><rect x="29" y="38" width="9" height="16" rx="3" fill="#1a0a30"/><rect x="10" y="16" width="36" height="26" rx="7" fill="#4a2080"/><rect x="15" y="20" width="26" height="4" rx="2" fill="#a78bfa" opacity="0.5"/><circle cx="28" cy="4" r="13" fill="#e8d8f0"/><circle cx="23" cy="2" r="2.5" fill="#4a2080"/><circle cx="33" cy="2" r="2.5" fill="#4a2080"/><path d="M23,8 Q28,12 33,8" fill="none" stroke="#7c3aed" stroke-width="1"/><path d="M14,4 Q28,-4 42,4" fill="none" stroke="#c084fc" stroke-width="2" opacity="0.7"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/></path><text x="28" y="76" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="800">Oracle</text></g>
-                <g v-if="hasRoomItem('teleport_shard')" transform="translate(545,175)" filter="url(#glowCrystal)" @click="runCmd('take teleport_shard')" style="cursor:pointer" class="bobbing"><polygon points="12,0 22,12 12,26 2,12" fill="rgba(192,132,252,0.7)"/><polygon points="12,0 12,26 2,12" fill="rgba(139,92,246,0.35)"/><text x="12" y="36" fill="#c084fc" font-size="6" font-weight="800" text-anchor="middle">shard</text></g>
-                <!-- Teleport button -->
-                <g transform="translate(370,300)" filter="url(#glowCrystal)" @click="randomTeleport" style="cursor:pointer">
-                    <rect x="0" y="0" width="60" height="36" rx="8" fill="rgba(139,92,246,0.15)" stroke="#c084fc" stroke-width="2"/>
-                    <text x="30" y="16" text-anchor="middle" fill="#c084fc" font-size="7" font-weight="800">🌀 随机</text>
-                    <text x="30" y="28" text-anchor="middle" fill="#a78bfa" font-size="6">传送</text>
-                    <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite"/>
-                </g>
-            </g>
-
-            <!-- ═══ PLAYER CHARACTER (on top of everything) ═══ -->
-            <g :transform="'translate('+(playerX-20)+','+(playerY-56+playerBob)+')'" filter="url(#shadow)">
-                <ellipse cx="20" cy="58" rx="18" ry="5" fill="rgba(0,0,0,0.3)"/>
-                <path d="M6,24 Q0,40 6,56 L34,56 Q40,40 34,24 Z" fill="#dc2626" opacity="0.85"/>
-                <rect x="9" y="48" width="9" height="11" rx="4" fill="#5c3a1e"/><rect x="22" y="48" width="9" height="11" rx="4" fill="#5c3a1e"/>
-                <rect x="11" y="36" width="7" height="14" rx="3" fill="#3a3020"/><rect x="22" y="36" width="7" height="14" rx="3" fill="#3a3020"/>
-                <rect x="7" y="18" width="26" height="22" rx="7" fill="#3b82f6"/>
-                <rect x="7" y="36" width="26" height="5" rx="2" fill="#8b6914"/><rect x="16" y="35" width="8" height="7" rx="2" fill="#f7c95f"/>
-                <rect x="1" y="20" width="8" height="5" rx="3" fill="#f5d0b0" transform="rotate(-25,5,22)"/><rect x="31" y="20" width="8" height="5" rx="3" fill="#f5d0b0" transform="rotate(25,35,22)"/>
-                <line x1="20" y1="19" x2="20" y2="35" stroke="rgba(255,255,255,0.1)" stroke-width="1.5"/>
-                <circle cx="20" cy="8" r="12" fill="#f5d0b0"/>
-                <path d="M8,4 Q8,-4 14,-6 Q20,-8 26,-6 Q32,-4 32,4 Q28,-1 20,0 Q12,-1 8,4Z" fill="#4a2820"/>
-                <rect x="7" y="2" width="5" height="10" rx="2" fill="#4a2820"/><rect x="28" y="2" width="5" height="10" rx="2" fill="#4a2820"/>
-                <circle cx="11" cy="12" r="3" fill="rgba(255,150,150,0.4)"/><circle cx="29" cy="12" r="3" fill="rgba(255,150,150,0.4)"/>
-                <circle cx="13" cy="9" r="2.5" fill="#1a1a1a"/><circle cx="14" cy="8" r="1" fill="#fff"/><circle cx="27" cy="9" r="2.5" fill="#1a1a1a"/><circle cx="28" cy="8" r="1" fill="#fff"/>
-                <path d="M15,13 Q20,18 25,13" fill="none" stroke="#c08060" stroke-width="1.2" stroke-linecap="round"/>
-                <rect x="12" y="-7" width="16" height="6" rx="3" fill="#3a6a2a"/><rect x="11" y="-2" width="18" height="3" rx="1.5" fill="#2a5a1a"/><path d="M28,-4 L36,-6 L30,-1Z" fill="#ea5555"/>
-                <g :opacity="bagOpacity" transform="translate(-4,22)"><rect x="0" y="0" width="12" height="16" rx="5" fill="#b45309" stroke="#92400e" stroke-width="1"/><rect x="2" y="2" width="8" height="5" rx="2" fill="#d97706"/><rect x="3" y="9" width="6" height="2" rx="1" fill="#78350f"/></g>
-                <text x="20" y="76" text-anchor="middle" fill="#f7c95f" font-size="10" font-weight="900">{{ state.playerName||'You' }}</text>
-            </g>
-        </svg>
-
-        <!-- BACKPACK BAR -->
-        <div class="backpack-bar" :class="{'bag-flash':bagFlash}">
-            <div class="bp-title">🎒 背包 · {{ inventoryItems.length }}件 · {{ fmtW(state.maxWeight) }}kg</div>
-            <div v-if="inventoryItems.length===0" class="bp-empty">空空如也</div>
-            <div class="bp-item" v-for="item in inventoryItems" :key="item">
-                <div class="bp-icon" v-html="itemSvg(item)"></div>
-                <div class="bp-info"><div class="bp-name">{{ itemName(item) }}</div><div class="bp-wt">{{ itemWt(item) }}kg</div></div>
-                <div class="bp-acts">
-                    <button class="bp-btn drop" @click="doDrop(item)">🗑扔</button>
-                    <button class="bp-btn eat" @click="doEat(item)">🍽吃</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Speech bubble / Float item -->
-        <div class="speech-bubble" v-if="speechBubble.show" :style="{left:speechBubble.x+'px',top:speechBubble.y+'px'}">{{ speechBubble.text }}</div>
-        <div class="float-item" v-if="floatItem.show" :style="{left:floatItem.x+'px',top:floatItem.y+'px',opacity:floatItem.opacity}">{{ floatItem.emoji }}</div>
-
-        <!-- Minimap -->
-        <div class="minimap">
-            <svg viewBox="0 0 160 120"><rect width="160" height="120" fill="rgba(3,9,18,0)"/>
-                <line v-for="l in mmLines" :key="l.key" :x1="l.x1" :y1="l.y1" :x2="l.x2" :y2="l.y2" :class="['mm-line',{lit:visitedRooms.has(l.from)&&visitedRooms.has(l.to)}]"/>
-                <circle v-for="n in mmNodes" :key="n.key" :cx="n.x" :cy="n.y" r="8" :class="['mm-node',{visited:visitedRooms.has(n.key)&&n.key!==currentRoomKey}]" :fill="visitedRooms.has(n.key)?n.fill:'#141e2a'" :stroke="currentRoomKey===n.key?'#f7c95f':(visitedRooms.has(n.key)?'rgba(125,211,252,0.4)':'#1e2840')" :stroke-width="currentRoomKey===n.key?2.5:1.2" @click="clickMinimapRoom(n.key)"/>
-                <circle v-for="n in mmNodes" :key="'d'+n.key" :cx="n.x" :cy="n.y" r="2.5" :fill="currentRoomKey===n.key?'#f7c95f':(visitedRooms.has(n.key)?'#7dcbfc':'#444')"/>
-                <text v-for="n in mmNodes" :key="'l'+n.key" :x="n.x" :y="n.y+15" class="mm-label" :fill="visitedRooms.has(n.key)?'#c9dcf7':'#2a3040'">{{ n.label }}</text>
-            </svg>
-        </div>
-
-        <!-- D-Pad -->
-        <div class="dpad">
-            <div></div><button class="dpad-btn" :class="{risk:!exits.includes('north')}" @click="riskyMove('north')" :title="exits.includes('north')?'向北移动':'⚠ 此路不通，撞墙扣5HP'">▲<span v-if="!exits.includes('north')" class="dpad-risk">⚠️</span></button><div></div>
-            <button class="dpad-btn" :class="{risk:!exits.includes('west')}" @click="riskyMove('west')" :title="exits.includes('west')?'向西移动':'⚠ 此路不通，撞墙扣5HP'">◀<span v-if="!exits.includes('west')" class="dpad-risk">⚠️</span></button>
-            <div class="dpad-center">{{ currentRoomKey }}</div>
-            <button class="dpad-btn" :class="{risk:!exits.includes('east')}" @click="riskyMove('east')" :title="exits.includes('east')?'向东移动':'⚠ 此路不通，撞墙扣5HP'">▶<span v-if="!exits.includes('east')" class="dpad-risk">⚠️</span></button>
-            <div></div><button class="dpad-btn" :class="{risk:!exits.includes('south')}" @click="riskyMove('south')" :title="exits.includes('south')?'向南移动':'⚠ 此路不通，撞墙扣5HP'">▼<span v-if="!exits.includes('south')" class="dpad-risk">⚠️</span></button><div></div>
-        </div>
-
-        <!-- Exit labels -->
-        <div class="exit-label" v-for="e in exitLabels" :key="e.dir" :style="{left:e.x+'px',top:e.y+'px'}" @click="runCmd('go '+e.dir)">{{ e.label }}</div>
-    </div>
-
-    <!-- ═══ BOTTOM ═══ -->
-    <div class="bottom-area">
-        <div class="story-log">
-            <div class="log-head"><h3>📜 冒险日志</h3><span class="badge">{{ logs.length }}</span></div>
-            <div class="log-body" ref="logEl"><div v-for="e in logs" :key="e.id"><span v-if="e.cmd" class="cmd">&gt; {{ e.cmd }}</span><br v-if="e.cmd"><span :class="{sys:e.system,err:e.error}">{{ e.msg }}</span><br><br></div></div>
-        </div>
-        <div class="cmd-panel">
-            <form class="cmd-row" @submit.prevent="runCmd(commandText)"><input class="cmd-input" v-model="commandText" placeholder="输入命令..." autocomplete="off" :disabled="loading"><button class="btn-run" type="submit" :disabled="loading">{{ loading?'..':'执行' }}</button></form>
-            <div class="quick-btns">
-                <button class="qbtn" @click="runCmd('look')">🔍观察</button><button class="qbtn" @click="runCmd('back')">↩返回</button>
-                <button class="qbtn" @click="runCmd('items')">🎒背包</button><button class="qbtn" @click="runCmd('help')">❓帮助</button>
-                <button class="qbtn" @click="runCmd('save quicksave')" :disabled="!state.loggedIn" :title="state.loggedIn?'':'请先登录'">💾存档</button>
-                <button class="qbtn" @click="runCmd('load quicksave')" :disabled="!state.loggedIn" :title="state.loggedIn?'':'请先登录'">📂读档</button>
-            </div>
-            <div class="err-msg">{{ errorMsg }}</div>
-        </div>
-    </div>
-    </template>
-
-    <!-- Pause overlay -->
-    <div class="overlay" v-if="paused" style="background:rgba(2,6,16,0.6)" @click="togglePause">
-        <div class="overlay-card" style="border-color:rgba(125,211,252,0.3)">
-            <h2 style="color:var(--ink)">⏸ 游戏暂停</h2>
-            <p>点击任意位置或按 ESC 继续</p>
-        </div>
-    </div>
-
-    <!-- Toast -->
-    <div class="toast-msg" v-if="toast">{{ toast }}</div>
-
-    <!-- ═══ VICTORY OVERLAY ═══ -->
-    <div class="overlay" v-if="state.victory" @click.self="restartGame">
-        <div class="overlay-card" style="border-color:var(--gold);animation:bubbleIn 500ms ease">
-            <div style="font-size:80px;margin-bottom:4px;animation:bob 0.6s ease-in-out infinite">🏆</div>
-            <h2 style="color:var(--gold);font-size:36px;margin-bottom:8px">🎊 通关成功！</h2>
-            <p style="font-size:14px">你成功将 <strong style="color:#fb7185;font-size:18px">task_item</strong> 带回了大学正门<br>拯救了校园网络系统！任务完成！</p>
-            <div style="display:flex;gap:32px;justify-content:center;margin:20px 0">
-                <div style="text-align:center"><div style="font-size:36px;font-weight:900;color:var(--gold)">{{ state.score }}</div><div style="font-size:14px;color:var(--muted)">最终分数</div></div>
-                <div style="text-align:center"><div style="font-size:36px;font-weight:900;color:var(--green)">{{ state.health }}</div><div style="font-size:14px;color:var(--muted)">剩余生命</div></div>
-                <div style="text-align:center"><div style="font-size:36px;font-weight:900;color:var(--blue)">{{ inventoryItems.length }}</div><div style="font-size:14px;color:var(--muted)">携带物品</div></div>
-            </div>
-            <div style="margin-bottom:16px;color:var(--gold);font-size:13px;font-weight:700">
-                {{ state.score >= 50 ? '🌟 完美通关！你是校园英雄！' : state.score >= 20 ? '👍 不错的成绩！还可以探索更多！' : '📝 试试多探索一些支线任务吧！' }}
-            </div>
-            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-                <button class="btn-restart" @click="joinLeaderboard" style="font-size:16px;padding:10px 28px;background:linear-gradient(135deg,#f9d05f,#f0a820);color:#1d1300">🏆 加入排行榜</button>
-                <button class="btn-restart" @click="restartGame" style="font-size:16px;padding:10px 32px">🔄 再来一局</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══ LEADERBOARD OVERLAY ═══ -->
-    <div class="lb-overlay" v-if="showLeaderboard" @click.self="showLeaderboard=false">
-        <div class="lb-card" style="position:relative">
-            <button class="btn-close" @click="showLeaderboard=false">✕</button>
-            <h2>🏆 排行榜</h2>
-            <div class="lb-row header"><span>#</span><span>玩家</span><span>分数</span><span>HP</span><span>状态</span></div>
-            <div v-if="lbLoading" class="lb-loading"><span class="loading-spinner"></span>加载中...</div>
-            <div v-else-if="lbError" class="lb-empty">{{ lbError }}</div>
-            <div v-else-if="leaderboard.length===0" class="lb-empty">还没有人存档过，快来成为第一名吧！</div>
-            <div class="lb-row" v-for="(e,i) in leaderboard" :key="e.playerName">
-                <span class="lb-rank" :class="{'top1':i===0,'top2':i===1,'top3':i===2}">{{ i+1 }}</span>
-                <span class="lb-name">{{ e.playerName }}</span>
-                <span class="lb-score">{{ e.score }}</span>
-                <span class="lb-hp">{{ e.health }}</span>
-                <span class="lb-badge">{{ e.victory?'🏆通关':'🕹' }}</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══ GAME OVER OVERLAY ═══ -->
-    <div class="overlay" v-if="state.health<=0 && !state.victory" @click.self="restartGame">
-        <div class="overlay-card" style="border-color:var(--red);animation:bubbleIn 500ms ease">
-            <div style="font-size:80px;margin-bottom:4px">💀</div>
-            <h2 style="color:var(--red);font-size:36px;margin-bottom:8px">游戏失败</h2>
-            <p style="font-size:14px">你的生命值已耗尽…<br>冒险在此终结。</p>
-            <div style="display:flex;gap:32px;justify-content:center;margin:20px 0">
-                <div style="text-align:center"><div style="font-size:36px;font-weight:900;color:var(--gold)">{{ state.score }}</div><div style="font-size:14px;color:var(--muted)">最终分数</div></div>
-                <div style="text-align:center"><div style="font-size:36px;font-weight:900;color:var(--red)">0</div><div style="font-size:14px;color:var(--muted)">生命值</div></div>
-                <div style="text-align:center"><div style="font-size:36px;font-weight:900;color:var(--muted)">{{ currentRoomKey }}</div><div style="font-size:14px;color:var(--muted)">倒下的地方</div></div>
-            </div>
-            <p style="color:var(--muted);font-size:12px;margin-bottom:16px">提示：走路撞墙(⚠️方向)、拾取超重、对话失败都会扣血</p>
-            <button class="btn-restart" @click="restartGame" style="font-size:16px;padding:10px 32px">🔄 重新挑战</button>
-        </div>
-    </div>
-</div>
-
-<script>
-const{createApp,nextTick}=Vue;
-const ROOM_EXITS={outside:[{dir:'east',to:'theater'},{dir:'south',to:'lab'},{dir:'west',to:'pub'}],theater:[{dir:'west',to:'outside'},{dir:'north',to:'teleport'},{dir:'east',to:'office'}],pub:[{dir:'east',to:'outside'}],lab:[{dir:'north',to:'outside'},{dir:'east',to:'office'}],office:[{dir:'west',to:'lab'},{dir:'south',to:'theater'}],teleport:[]};
-const NPC_DATA={outside:['guard','欢迎来到武理校园！听说计算实验室里丢失了重要资料(task_item)，找到它并带回正门就算完成任务。向南进入实验室看看吧。'],theater:['lecturer','上课请保持安静。有人看到实验室的门昨晚没关好吗？管理员 office 那边也许有更多线索。'],pub:['bartender','Welcome to the campus pub! 需要力量就试试 magic cookie，它能永久提升你的负重上限+10kg。east 方向可以回到正门。'],lab:['student','我在找 task_item，那是提交实训报告的关键文件！拿到后记得带回 outside 才算真正完成使命。'],office:['admin','Please keep the computing lab tidy. 如需存档，请先 login 登录，再使用 save 命令。'],teleport:['oracle','进入此 chamber 者，将被随机传送到校园某处。祝你好运，冒险者。']};
-const MM_NODES=[{key:'teleport',x:80,y:10,label:'Tele',fill:'rgba(192,132,252,0.3)'},{key:'pub',x:14,y:46,label:'Pub',fill:'rgba(251,191,36,0.25)'},{key:'outside',x:61,y:52,label:'Out',fill:'rgba(247,201,95,0.25)'},{key:'theater',x:111,y:46,label:'Thea',fill:'rgba(180,170,160,0.25)'},{key:'office',x:142,y:68,label:'Off',fill:'rgba(212,200,184,0.25)'},{key:'lab',x:84,y:96,label:'Lab',fill:'rgba(72,200,255,0.2)'}];
-const MM_LINES=[{key:'ot',from:'outside',to:'theater',x1:70,y1:54,x2:103,y2:48},{key:'op',from:'outside',to:'pub',x1:54,y1:50,x2:22,y2:44},{key:'ol',from:'outside',to:'lab',x1:68,y1:62,x2:80,y2:88},{key:'tt',from:'theater',to:'teleport',x1:111,y2:42,x2:82,y2:18},{key:'to',from:'theater',to:'office',x1:123,y2:52,x2:137,y2:62},{key:'lo',from:'lab',to:'office',x1:94,y2:96,x2:137,y2:73}];
-const EXIT_POS={outside:[{dir:'east',x:700,y:335,label:'→ Theater'},{dir:'south',x:350,y:438,label:'↓ Lab'},{dir:'west',x:45,y:335,label:'← Pub'}],theater:[{dir:'west',x:35,y:275,label:'← Outside'},{dir:'north',x:330,y:28,label:'↑ Teleport'},{dir:'east',x:700,y:275,label:'→ Office'}],pub:[{dir:'east',x:700,y:305,label:'→ Outside'}],lab:[{dir:'north',x:340,y:480,label:'↑ Outside'},{dir:'east',x:700,y:378,label:'→ Office'}],office:[{dir:'west',x:28,y:395,label:'← Lab'},{dir:'south',x:655,y:442,label:'↓ Theater'}],teleport:[]};
-const ROOM_PLAYER_POS={outside:{x:400,y:432},theater:{x:400,y:420},pub:{x:400,y:420},lab:{x:400,y:415},office:{x:400,y:420},teleport:{x:400,y:420}};
-const ITEM_SVGS={campus_map:'<svg viewBox="0 0 28 28"><rect x="2" y="4" width="20" height="18" rx="3" fill="#f5e6c8" stroke="#c4a870" stroke-width="1"/><circle cx="7" cy="7" r="4" fill="#d4c4a0"/><circle cx="19" cy="7" r="4" fill="#d4c4a0"/><rect x="4" y="2" width="16" height="6" rx="2" fill="#e8d4a8"/></svg>',welcome_brochure:'<svg viewBox="0 0 28 28"><rect x="2" y="3" width="24" height="20" rx="3" fill="#fff8e8" stroke="#d4c8b0" stroke-width="1"/><rect x="5" y="6" width="18" height="4" rx="1" fill="#dde"/><rect x="5" y="13" width="12" height="4" rx="1" fill="#eef"/></svg>',notebook:'<svg viewBox="0 0 28 28"><rect x="3" y="2" width="20" height="24" rx="3" fill="#3a6aaa" stroke="#2a5a9a" stroke-width="1"/><rect x="5" y="5" width="16" height="3" rx="1" fill="#4a7aba"/><rect x="5" y="18" width="16" height="3" rx="1" fill="#4a7aba"/></svg>',pen:'<svg viewBox="0 0 28 28"><rect x="8" y="0" width="7" height="24" rx="3" fill="#1a4a8a"/><rect x="9" y="0" width="5" height="10" rx="3" fill="#a0b0c0"/><polygon points="8,24 15,24 11.5,28" fill="#c0a030"/></svg>',cookie:'<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="#d4a030" stroke="#b08020" stroke-width="1.5"/><circle cx="9" cy="8" r="3" fill="#3a1a00"/><circle cx="18" cy="7" r="2.5" fill="#3a1a00"/><circle cx="12" cy="17" r="2.5" fill="#3a1a00"/><circle cx="19" cy="15" r="2" fill="#3a1a00"/></svg>',energy_drink:'<svg viewBox="0 0 28 28"><rect x="5" y="2" width="16" height="24" rx="5" fill="#48a0d0" stroke="#3890c0" stroke-width="1"/><rect x="6" y="6" width="14" height="5" rx="2" fill="#68c0f0"/><rect x="7" y="15" width="12" height="5" rx="2" fill="#3890c0"/></svg>',task_item:'<svg viewBox="0 0 28 28"><rect x="2" y="2" width="24" height="18" rx="3" fill="#fff0e0" stroke="#fb7185" stroke-width="1.5"/><rect x="4" y="5" width="20" height="4" rx="1" fill="#fb7185" opacity="0.6"/><rect x="5" y="12" width="12" height="3" rx="1" fill="#ddd"/></svg>',programming_manual:'<svg viewBox="0 0 28 28"><rect x="3" y="2" width="22" height="24" rx="3" fill="#c04030" stroke="#a03020" stroke-width="1"/><rect x="5" y="5" width="18" height="3" rx="1" fill="#d06050"/><rect x="5" y="20" width="18" height="3" rx="1" fill="#d06050"/></svg>',usb_drive:'<svg viewBox="0 0 28 28"><rect x="6" y="6" width="12" height="18" rx="3" fill="#3a3a3a" stroke="#2a2a2a" stroke-width="1"/><rect x="8" y="2" width="8" height="7" rx="3" fill="#5a5a5a"/><circle cx="12" cy="5" r="2" fill="#48c8ff" opacity="0.7"/></svg>',keycard:'<svg viewBox="0 0 28 28"><rect x="4" y="4" width="20" height="14" rx="3" fill="#3a6ab0" stroke="#2a5aa0" stroke-width="1"/><rect x="6" y="7" width="16" height="3" rx="1" fill="#5a8ad0"/><circle cx="17" cy="15" r="3" fill="#88b8f0"/></svg>',report_template:'<svg viewBox="0 0 28 28"><rect x="4" y="2" width="18" height="14" rx="2" fill="#f8f0e0" stroke="#d4c8b0" stroke-width="1"/><rect x="7" y="5" width="12" height="3" rx="1" fill="#ddd"/><rect x="7" y="10" width="10" height="3" rx="1" fill="#eee"/></svg>',teleport_shard:'<svg viewBox="0 0 28 28"><polygon points="14,2 24,14 14,26 4,14" fill="rgba(192,132,252,0.7)" stroke="#a78bfa" stroke-width="1.5"/><polygon points="14,2 14,26 4,14" fill="rgba(139,92,246,0.3)"/></svg>'};
-
-const GUIDE_PAGES={1:{title:'🎯 任务目标',html:'<h3>主线任务</h3><p>前往 <span class="tip">computing lab</span> 找到 <span class="tip">task_item</span>，带回大学正门，点击金色 <span class="tip">📦提交箱</span> 放入即可通关！</p><h3>⚠ 注意</h3><p>只有放对 <span class="tip">task_item</span> 才通关，放错会提示应放什么。</p><h3>支线任务</h3><p>在 <span class="tip">pub</span> 吃 <span class="tip">magic cookie</span>，负重上限 <span class="tip">+10kg</span>。</p>'},2:{title:'🎮 操控与生命值',html:'<p><span class="tip">WASD/方向键/D-Pad</span> 移动（可用方向金色，<span style="color:#fb7185">红色⚠️方向会撞墙扣5HP</span>）</p><p>成功移动 <span class="tip">HP+1</span>，撞墙 <span class="tip">HP-5</span></p><p><span class="tip">B键</span> 返回上一房间</p><p>扣血时<span style="color:#fb7185">屏幕红闪</span>，回血时<span style="color:#4ade80">绿闪</span></p>'},3:{title:'👥 NPC 与对话',html:'<p><span class="tip">点击NPC角色</span>可触发对话获得线索。</p><p>对话成功 <span class="tip">HP+5、分数+3</span>，对话失败 <span class="tip">HP-2</span>。</p><p>每个房间有不同NPC，多和他们聊聊！</p>'},4:{title:'📦 物品与背包',html:'<p>点击场景物品<span class="tip">拾取</span>（成功 <span class="tip">HP+3</span>，超重 <span class="tip">HP-3</span>）。</p><p>左侧背包栏可<span class="tip">丢弃</span>或<span class="tip">食用</span>物品。</p><p>吃cookie <span class="tip">HP+20</span>，所有操作伴有动画。</p>'},5:{title:'💾 存档与开始',html:'<p>你已登录，随时可用底部 <span class="tip">💾存档</span> 保存进度！</p><p>通关后成绩也会自动记录。</p><p style="color:var(--gold);font-weight:900;font-size:15px">准备好了吗？开始你的校园冒险吧！</p>'}};
-
-createApp({data(){return{gamePhase:'login',loginName:'',loginError:'',loginMode:'register',guideStep:1,prevHp:100,hpChange:null,screenFlash:null,paused:false,showSettings:false,showLeaderboard:false,leaderboard:[],lbLoading:false,lbError:'',achievements:[],state:{playerName:'Adventurer',currentRoomName:'outside the main entrance of the university',score:0,health:100,currentWeight:0,maxWeight:10,inventoryItems:[],roomItems:[],availableExits:[],npcs:[],victory:false,questSummary:'主线=started，支线(cookie)=not_started',loggedIn:false},commandText:'',loading:false,errorMsg:'',toast:'',toastTimer:null,logs:[],logId:2,visitedRooms:new Set(['outside']),mmNodes:MM_NODES,mmLines:MM_LINES,shelfBooks:[{x:10,w:8,c:'#e06040'},{x:24,w:6,c:'#4080c0'},{x:35,w:10,c:'#50a050'},{x:52,w:7,c:'#c08030'},{x:65,w:8,c:'#8060a0'},{x:80,w:6,c:'#d0a030'}],teleParticles:[{i:1,x:280,y:90,r:2.5,anim:'90;55;90',dur:'3s'},{i:2,x:480,y:70,r:2,anim:'70;38;70',dur:'2.5s'},{i:3,x:320,y:280,r:3,anim:'280;245;280',dur:'3.5s'},{i:4,x:460,y:320,r:2.2,anim:'320;285;320',dur:'2.8s'},{i:5,x:230,y:190,r:2.5,anim:'190;155;190',dur:'3.2s'},{i:6,x:520,y:170,r:2,anim:'170;135;170',dur:'2.6s'},{i:7,x:400,y:140,r:1.8,anim:'140;105;140',dur:'2.2s'},{i:8,x:300,y:250,r:2.2,anim:'250;218;250',dur:'3.8s'},{i:9,x:500,y:280,r:1.8,anim:'280;245;280',dur:'2.4s'},{i:10,x:370,y:330,r:2.8,anim:'330;295;330',dur:'3.1s'}],speechBubble:{show:false,x:0,y:0,text:''},speechTimer:null,floatItem:{show:false,x:0,y:0,emoji:'',opacity:1},floatTimer:null,playerBob:0,bobTimer:null,bagOpacity:0,bagFlash:false,prevInventoryCount:0,audioCtx:null};},
-computed:{inventoryItems(){return this.state.inventoryItems||[]},roomItems(){return this.state.roomItems||[]},npcs(){return this.state.npcs||[]},exits(){return this.state.availableExits||[]},hpPct(){return Math.max(0,Math.min(100,Number(this.state.health||0)))},wtPct(){const m=Math.max(1,Number(this.state.maxWeight||1));return Math.max(0,Math.min(100,Math.round(Number(this.state.currentWeight||0)*100/m)))},hpCls(){const h=this.state.health||0;return h>60?'green':h>25?'gold':'red'},currentRoomKey(){const n=String(this.state.currentRoomName||'').toLowerCase();for(const k of['teleport','office','lab','pub','theater','outside']){if(n.indexOf(k)>=0)return k}return'outside'},exitLabels(){return EXIT_POS[this.currentRoomKey]||[]},questShort(){const q=this.state.questSummary||'';if(q.includes('completed'))return'✅完成';if(q.includes('collected'))return'📋已获取';return'🔍进行中'},guideTitle(){return GUIDE_PAGES[this.guideStep]?.title||''},guideContent(){return GUIDE_PAGES[this.guideStep]?.html||''},playerX(){return(ROOM_PLAYER_POS[this.currentRoomKey]||ROOM_PLAYER_POS.outside).x},playerY(){return(ROOM_PLAYER_POS[this.currentRoomKey]||ROOM_PLAYER_POS.outside).y}},methods:{
-    async doLogin(){const name=this.loginName.trim();if(!name)return;this.loginError='';const mode=this.loginMode;try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'login '+name})});const d=await r.json();const msg=d.message||'';if(mode==='register'&&msg.includes('欢迎回来')){this.loginError='⚠ 用户名「'+name+'」已存在！请切换到登录标签';return}if(mode==='signin'&&msg.includes('欢迎新玩家')){this.loginError='⚠ 用户名「'+name+'」不存在！请切换到注册标签先创建账号';return}this.state=d.gameState||this.state;if(!this.state.loggedIn){this.loginError='登录失败，请重试';return}if(mode==='register'){this.showToastMsg('✅ 注册成功！欢迎，'+name+'！')}else{this.showToastMsg('👤 欢迎回来，'+name+'！')}this.gamePhase='guide';this.guideStep=1;this.loginName='';this.prevHp=this.state.health||100;localStorage.removeItem('backpack');this.initGame()}catch(e){this.loginError='无法连接到服务器'}},
-    initGame(){this.visitedRooms=new Set(['outside']);this.logs=[{id:1,cmd:'',msg:'🎓 主线任务：前往 computing lab 找到 task_item，带回大学正门(outside)，点击金色📦提交箱放入即可通关！\n支线：在 pub 吃掉 magic cookie 提升负重上限+10kg。\n提示：方向键移动（红色⚠️方向会撞墙扣HP），点击场景拾取物品和对话NPC。',system:true}];this.logId=2;this.prevInventoryCount=this.inventoryItems.length;this.prevHp=this.state.health||100;this.updateBag();this.loadBackpack()},
-    riskyMove(dir){this.runCmd('go '+dir)},
-    submitTask(){const hasTask=this.inventoryItems.some(i=>this.itemName(i).toLowerCase().includes('task_item'));if(hasTask){this.showToast('📦 正在提交 task_item...');this.runCmd('drop task_item')}else{const itemNames=this.inventoryItems.map(i=>this.itemName(i)).join('、')||'空背包';this.showToast('❌ 提交失败！箱子里需要放入 task_item，你当前有：'+itemNames)}},
-    randomTeleport(){const dirs=['north','south','east','west'];const d=dirs[Math.floor(Math.random()*4)];this.showToast('🌀 随机传送中...');this.runCmd('go '+d)},
-    showToastMsg(m){this.toast=m;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{this.toast=''},2500)},
-    checkHpChange(){const cur=this.state.health||0;const prev=this.prevHp;if(cur!==prev){this.hpChange={val:cur-prev,up:cur>prev};this.screenFlash=cur>prev?'heal':'dmg';setTimeout(()=>{this.hpChange=null},1000);setTimeout(()=>{this.screenFlash=null},400);this.prevHp=cur}},
-    togglePause(){this.paused=!this.paused;this.showSettings=false},
-    async doRestart(){this.showSettings=false;this.paused=false;this.visitedRooms=new Set(['outside']);this.prevInventoryCount=0;this.prevHp=100;localStorage.removeItem('backpack');try{await fetch('/api/game/reset',{method:'POST'});const r=await fetch('/api/game/state');this.state=await r.json()}catch(e){}this.initGame();this.gamePhase='playing';this.$nextTick(()=>{this.$el.focus()})},
-    doQuit(){this.showSettings=false;this.paused=false;this.gamePhase='login';this.loginMode='signin';this.state.loggedIn=false;localStorage.removeItem('backpack')},
-    startGame(){this.gamePhase='playing';this.$nextTick(()=>{this.$el.focus()})},
-    markVisited(){const k=this.currentRoomKey;if(!this.visitedRooms.has(k))this.visitedRooms=new Set([...this.visitedRooms,k])},
-    talkToNPC(npc){const rk=this.currentRoomKey,d=NPC_DATA[rk];if(!d)return;clearTimeout(this.speechTimer);const X={outside:410,theater:390,pub:410,lab:390,office:370,teleport:400},Y={outside:220,theater:120,pub:130,lab:250,office:190,teleport:90};this.speechBubble={show:true,x:Math.min(480,Math.max(200,X[rk]-30)),y:Y[rk]-55,text:d[1]};this.runCmd('talk '+npc);this.speechTimer=setTimeout(()=>{this.speechBubble.show=false},7000)},
-    hasRoomItem(name){return this.roomItems.some(i=>this.itemName(i).toLowerCase()===name.toLowerCase())},
-    doDrop(item){const n=this.itemName(item);this.runCmd('drop '+n);this.animateDrop(n)},
-    doEat(item){const n=this.itemName(item);this.runCmd('eat '+n);this.animateEat(n)},
-    itemSvg(item){const n=this.itemName(item).toLowerCase();for(const[k,v]of Object.entries(ITEM_SVGS)){if(n.includes(k))return v}return ITEM_SVGS.campus_map},
-    animatePickup(name){const ma=this.$refs.mainArea;if(!ma)return;const r=ma.getBoundingClientRect();const emoji=this.itemEmoji(name);this.floatItem={show:true,x:r.width*0.32,y:r.height*0.32,emoji:emoji,opacity:1};setTimeout(()=>{this.floatItem={...this.floatItem,x:r.width*0.52,y:r.height*0.45,opacity:0.7}},160);setTimeout(()=>{this.floatItem={...this.floatItem,x:r.width*0.05,y:r.height*0.1,opacity:0,emoji:'🎒+'}},420);this.floatTimer=setTimeout(()=>{this.floatItem.show=false},700)},
-    animateDrop(name){const ma=this.$refs.mainArea;if(!ma)return;const r=ma.getBoundingClientRect();const emoji=this.itemEmoji(name);this.floatItem={show:true,x:r.width*0.05,y:r.height*0.1,emoji:emoji,opacity:1};setTimeout(()=>{this.floatItem={...this.floatItem,x:r.width*0.3,y:r.height*0.35,opacity:0.6}},200);setTimeout(()=>{this.floatItem={...this.floatItem,x:r.width*0.28,y:r.height*0.42,opacity:0,emoji:'📦'}},500);this.floatTimer=setTimeout(()=>{this.floatItem.show=false},800)},
-    animateEat(name){const ma=this.$refs.mainArea;if(!ma)return;const r=ma.getBoundingClientRect();const emoji=this.itemEmoji(name);this.floatItem={show:true,x:r.width*0.05,y:r.height*0.1,emoji:emoji,opacity:1};setTimeout(()=>{this.floatItem={...this.floatItem,x:r.width*0.45,y:r.height*0.3,opacity:0.8,emoji:'🍽'}},200);setTimeout(()=>{this.floatItem={...this.floatItem,x:r.width*0.5,y:r.height*0.2,opacity:0,emoji:'💪'}},500);this.floatTimer=setTimeout(()=>{this.floatItem.show=false},800)},
-    itemEmoji(name){const n=(name||'').toLowerCase();if(n.includes('cookie'))return'🍪';if(n.includes('task'))return'📋';if(n.includes('map'))return'📜';if(n.includes('brochure'))return'📖';if(n.includes('notebook'))return'📓';if(n.includes('pen'))return'🖊';if(n.includes('drink'))return'🥤';if(n.includes('manual'))return'📘';if(n.includes('usb'))return'💾';if(n.includes('keycard'))return'💳';if(n.includes('report'))return'📄';if(n.includes('shard'))return'💎';return'📦'},
-    updateBag(){this.bagOpacity=this.inventoryItems.length>0?1:0},
-    flashBagAnim(){this.bagFlash=true;setTimeout(()=>{this.bagFlash=false},400)},
-    startBob(){clearTimeout(this.bobTimer);this.playerBob=-6;this.bobTimer=setTimeout(()=>{this.playerBob=0},400)},
-    async runCmd(text){if(this.paused)return;const cmd=(text||'').trim();if(!cmd||this.loading)return;this.loading=true;this.errorMsg='';try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});const result=await r.json();const prevRoom=this.state.currentRoomName;const prevCount=this.inventoryItems.length;this.state=result.gameState||this.state;this.checkHpChange();this.logs.push({id:this.logId++,cmd:cmd,msg:result.message||'命令已执行。',system:false});this.commandText='';this.markVisited();const nowCount=this.inventoryItems.length;if(nowCount>prevCount){const takenItem=cmd.startsWith('take ')?cmd.substring(5).trim():'';this.animatePickup(takenItem);this.flashBagAnim()}else if(nowCount<prevCount){this.flashBagAnim()}this.updateBag();this.saveBackpack();this.showFeedback(cmd,prevRoom,this.state.currentRoomName,result.message);await nextTick();this.$nextTick(()=>{const el=this.$refs.logEl;if(el)el.scrollTop=el.scrollHeight})}catch(e){this.errorMsg='命令执行失败'}finally{this.loading=false}},
-    onKey(e){if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;const k=e.key.toLowerCase();if(k==='escape'){this.togglePause();return}if(this.paused)return;let d=null;if(k==='arrowup'||k==='w')d='north';else if(k==='arrowdown'||k==='s')d='south';else if(k==='arrowleft'||k==='a')d='west';else if(k==='arrowright'||k==='d')d='east';else if(k==='b'){e.preventDefault();this.runCmd('back');return}if(d){e.preventDefault();this.runCmd('go '+d)}},
-    clickMinimapRoom(key){if(key===this.currentRoomKey||!this.visitedRooms.has(key))return;const exits=ROOM_EXITS[this.currentRoomKey]||[];const m=exits.find(e=>e.to===key);if(m)this.runCmd('go '+m.dir)},
-    itemName(item){return String(item||'').replace(/\s*\([^)]*\)\s*$/,'').trim()},
-    itemWt(item){const m=String(item||'').match(/\((\d+(?:\.\d+)?)\)/);return m?m[1]:'?'},
-    fmtW(v){const n=Number(v||0);return Number.isInteger(n)?String(n):n.toFixed(1)},
-    showFeedback(cmd,prev,cur,msg){
-        if((cmd.startsWith('go ')||cmd==='back')&&prev&&cur&&prev!==cur){this.showToast('📍 '+cur);this.startBob()}
-        if(cmd.startsWith('take '))this.showToast('✅ 拾取: '+cmd.substring(5));
-        if(cmd.startsWith('drop ')){
-            const n=cmd.substring(5).trim();
-            if(this.currentRoomKey==='outside' && n.toLowerCase().includes('task_item')){
-                if(msg&&msg.includes('放入')){this.showToast('📦 task_item 已放入提交箱！任务完成！');if(!this.achievements.find(a=>a.id==='task')){this.achievements.push({id:'task',icon:'📦',name:'任务完成'});}this.playSound('task');this.celebrateTask();}else{this.showToast('⚠ 提交箱只需要 task_item，你放了：'+n);}
-            } else if(this.currentRoomKey==='outside'){
-                this.showToast('⚠ 提交箱只需要 task_item，你放了：'+n);
-            } else {
-                this.showToast('🗑 丢弃: '+n);
-            }
-        }
-        if(cmd.startsWith('eat ')){
-            const n=cmd.substring(4).trim();
-            if(msg&&msg.includes('成功吃掉')){
-                this.showToast(n.toLowerCase().includes('cookie')?'🍪 魔法饼干生效！负重上限+10kg！':'🍽 已食用: '+n);
-            }else{
-                this.showToast('❌ '+n+' 不能吃！');
-            }
-        }
-        if(cmd.startsWith('talk '))this.showToast('💬 与 '+cmd.substring(5)+' 对话');
-        if(cmd.startsWith('login '))this.showToast('👤 登录成功！欢迎，冒险者！');
-    },
-    loadBackpack(){try{const data=localStorage.getItem('backpack');if(data){const obj=JSON.parse(data);this.state.inventoryItems=obj.inventoryItems||[];this.state.currentWeight=obj.currentWeight||0;this.state.maxWeight=obj.maxWeight||10;}}catch(e){}},
-    saveBackpack(){try{const data={inventoryItems:this.state.inventoryItems,currentWeight:this.state.currentWeight,maxWeight:this.state.maxWeight};localStorage.setItem('backpack',JSON.stringify(data));}catch(e){}},
-    showToast(msg){this.toast=msg;clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>{this.toast=''},2500)},
-    initAudio(){if(!this.audioCtx){try{this.audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}},
-    playTone(freq,dur,type,gain){if(!this.audioCtx)return;try{const o=this.audioCtx.createOscillator();const g=this.audioCtx.createGain();o.type=type||'sine';o.frequency.setValueAtTime(freq,this.audioCtx.currentTime);g.gain.setValueAtTime(gain||0.15,this.audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,this.audioCtx.currentTime+dur);o.connect(g);g.connect(this.audioCtx.destination);o.start();o.stop(this.audioCtx.currentTime+dur)}catch(e){}},
-    playSound(type){
-        this.initAudio();
-        if(type==='pick'){this.playTone(880,0.15,'sine',0.12);setTimeout(()=>this.playTone(1100,0.12,'sine',0.1),80)}
-        else if(type==='drop'){this.playTone(300,0.15,'triangle',0.12);setTimeout(()=>this.playTone(220,0.2,'triangle',0.1),80)}
-        else if(type==='eat'){this.playTone(440,0.1,'sine',0.12);setTimeout(()=>this.playTone(660,0.1,'sine',0.12),100);setTimeout(()=>this.playTone(880,0.15,'sine',0.15),200)}
-        else if(type==='task'){this.playTone(523,0.12,'sine',0.12);setTimeout(()=>this.playTone(659,0.12,'sine',0.12),120);setTimeout(()=>this.playTone(784,0.12,'sine',0.12),240);setTimeout(()=>this.playTone(1047,0.3,'sine',0.18),360)}
-    },
-    async joinLeaderboard(){
-        if(this.state.loggedIn){
-            // 先保存游戏以触发排行榜记录
-            try{await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'save quicksave'})})}catch(e){}
-        }
-        await this.fetchLeaderboard();
-        this.showLeaderboard=true;
-    },
-    async fetchLeaderboard(){this.lbLoading=true;this.lbError='';try{const r=await fetch('/api/game/leaderboard?limit=20');if(!r.ok)throw new Error('HTTP '+r.status);this.leaderboard=await r.json()}catch(e){this.lbError='加载排行榜失败';this.leaderboard=[]}finally{this.lbLoading=false}},
-    celebrateTask(){
-        // simple sparkle float item
-        const ma=this.$refs.mainArea; if(!ma) return;
-        const r=ma.getBoundingClientRect();
-        this.floatItem={show:true,x:r.width*0.5,y:r.height*0.3,emoji:'✨',opacity:1};
-        setTimeout(()=>{this.floatItem.opacity=0;},800);
-        this.floatTimer=setTimeout(()=>{this.floatItem.show=false;},1000);
-    },
-    async restartGame(){this.paused=false;this.visitedRooms=new Set(['outside']);this.prevInventoryCount=0;this.prevHp=100;localStorage.removeItem('backpack');try{await fetch('/api/game/reset',{method:'POST'});const r=await fetch('/api/game/state');this.state=await r.json()}catch(e){}this.initGame();this.gamePhase='playing';this.$nextTick(()=>{this.$el.focus()})},
-    mounted(){}
-}}).mount('#app');
-</script>
-</body>
-</html>
+﻿<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>World of Zuul · Campus Adventure</title>
+<script src="https://cdn.bootcdn.net/ajax/libs/vue/3.4.0/vue.global.prod.js"></script>
+<style>
+:root{--bg-deep:#040b14;--bg:#070f1c;--ink:#e8f2ff;--muted:#8098b8;--gold:#f9d05f;--blue:#50d0ff;--green:#4ef08a;--red:#ff7088;--panel:rgba(10,20,35,0.78);--glass:rgba(12,22,38,0.65);--glass-border:rgba(255,255,255,0.06);--surface:rgba(14,28,48,0.92);--line:rgba(255,255,255,0.06);--grad-gold:linear-gradient(135deg,#f9d05f,#f0a820)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg-deep);color:var(--ink);overflow:hidden;-webkit-user-select:none;user-select:none}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+#app{width:100vw;height:100vh;display:flex;flex-direction:column;position:relative}
+.login-page{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e)}
+.login-page::before{content:'';position:absolute;inset:0;background:url('/assets/campus_outside.png') center/cover;opacity:0.15;pointer-events:none}
+.login-card{background:var(--surface);border:1px solid rgba(249,208,95,0.25);border-radius:16px;padding:40px 44px;text-align:center;width:380px;box-shadow:0 0 60px rgba(249,208,95,0.06)}
+.login-card h1{font-size:28px;background:var(--grad-gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.login-card .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.login-tabs{display:flex;gap:4px;margin-bottom:14px;justify-content:center}
+.login-tab{padding:7px 22px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:7px;cursor:pointer;font-size:13px;transition:all 150ms}
+.login-tab.active{background:rgba(249,208,95,0.1);border-color:var(--gold);color:var(--gold)}
+.login-field{width:100%;padding:10px 14px;border:1px solid var(--line);background:rgba(0,0,0,0.3);color:#fff;border-radius:8px;font-size:13px;outline:none;margin-bottom:10px;display:block}
+.login-field:focus{border-color:var(--gold)}
+.btn-login{width:100%;padding:12px;border:0;background:var(--grad-gold);color:#1d1300;font-weight:900;font-size:15px;border-radius:8px;cursor:pointer;margin-top:4px}
+.btn-login:disabled{opacity:0.4;cursor:not-allowed}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+.char-select{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);overflow:hidden}.char-select::before{content:'';position:absolute;inset:0;background:url('/assets/campus_outside.png') center/cover;opacity:0.15;pointer-events:none}
+.char-card{position:relative;z-index:1;text-align:center;padding:30px 40px;background:var(--surface);border:1px solid rgba(249,208,95,0.25);border-radius:16px;max-width:860px}
+.char-card h2{font-size:24px;color:var(--gold);margin-bottom:16px}
+.char-grid{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.char-option{width:150px;height:190px;border:2px solid rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 150ms;background:rgba(255,255,255,0.02)}
+.char-option:hover{border-color:rgba(249,208,95,0.4);background:rgba(249,208,95,0.05);transform:translateY(-2px)}
+.char-option.selected{border-color:var(--gold);background:rgba(249,208,95,0.1);box-shadow:0 0 20px rgba(249,208,95,0.2)}
+.char-option img{width:140px;height:160px;object-fit:contain;image-rendering:auto}
+.btn-gold{padding:10px 30px;border:0;background:var(--grad-gold);color:#1d1300;font-weight:900;font-size:15px;border-radius:10px;cursor:pointer;box-shadow:0 4px 20px rgba(240,168,32,0.3);transition:all 150ms}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(240,168,32,0.45)}
+.btn-gold:disabled{opacity:0.3;cursor:not-allowed}
+.top-hud{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--glass);border-bottom:1px solid var(--glass-border);backdrop-filter:blur(10px);flex-shrink:0;z-index:20;flex-wrap:wrap}
+.hud-title{font-weight:900;font-size:16px;color:var(--gold);white-space:nowrap}
+.hud-stats{display:flex;gap:12px;flex:1;flex-wrap:wrap;align-items:center}
+.hst{display:flex;flex-direction:column;gap:2px;min-width:70px}
+.hst .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:700}
+.hst .val{font-size:14px;font-weight:900}.hst .val.gold{color:var(--gold)}.hst .val.blue{color:var(--blue)}
+.bar{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width 300ms}
+.bar-fill.hp{background:var(--green)}.bar-fill.exp{background:#c880ff}.bar-fill.wt{background:var(--blue)}
+.hud-btn{padding:8px 14px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#cfe7ff;font-size:12px;font-weight:800;border-radius:6px;cursor:pointer;transition:all 120ms}
+.hud-btn:hover{background:rgba(80,208,255,0.08);border-color:rgba(80,208,255,0.2);transform:translateY(-1px)}
+.hud-btn.accent{background:rgba(249,208,95,0.08);border-color:rgba(249,208,95,0.15);color:var(--gold)}
+.settings-dropdown{position:absolute;top:48px;right:8px;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:4px;display:flex;flex-direction:column;gap:2px;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,0.5)}
+.settings-dropdown button{text-align:left;padding:8px 12px;border:0;background:transparent;color:var(--ink);font-size:13px;cursor:pointer;border-radius:5px;transition:all 120ms}
+.settings-dropdown button:hover{background:rgba(255,255,255,0.05)}
+.settings-dropdown button.danger{color:var(--red)}
+.game-area{flex:1;position:relative;overflow:hidden;min-height:0}
+.game-area canvas{display:block;width:100%;height:100%}.scene-transition{position:absolute;inset:0;z-index:80;background:#000 url('/assets/Black.png') center/cover no-repeat;opacity:0;pointer-events:none;transition:opacity 450ms ease}.scene-transition.show{opacity:1}
+.clickable{cursor:pointer;transition:filter 150ms}.clickable:hover{filter:brightness(1.15)}.guard-guide{position:absolute;left:-8%;top:-54px;transform:translateX(-50%);width:210px;text-align:center;pointer-events:none;animation:bob 1.2s ease-in-out infinite}.guard-guide-text{display:inline-block;padding:7px 12px;border:1px solid rgba(255,92,45,0.55);background:rgba(4,11,20,0.9);color:#ff5c2d;font-size:13px;font-weight:900;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,0.35);white-space:nowrap}.guard-guide-arrow{margin:3px auto 0;width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:18px solid var(--gold);filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45))}.map-guide{position:absolute;left:-140%;top:-58px;transform:translateX(-50%);width:180px;text-align:center;pointer-events:none;animation:bob 1.2s ease-in-out infinite}.map-guide-text{display:inline-block;padding:7px 12px;border:1px solid rgba(255,92,45,0.55);background:rgba(4,11,20,0.9);color:#ff5c2d;font-size:13px;font-weight:900;border-radius:8px;box-shadow:0 4px 18px rgba(0,0,0,0.35);white-space:nowrap}.map-guide-arrow{margin:3px auto 0;width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:18px solid var(--gold);filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45))}
+.dpad{position:absolute;right:16px;bottom:20px;z-index:25;display:grid;grid-template-columns:56px 56px 56px;grid-template-rows:56px 56px 56px;gap:3px}
+.dpad-btn{width:56px;height:56px;border:1px solid rgba(255,255,255,0.1);background:rgba(12,22,38,0.75);color:rgba(255,255,255,0.6);font-size:20px;border-radius:10px;cursor:pointer;display:grid;place-items:center;transition:all 120ms;backdrop-filter:blur(6px)}
+.dpad-btn:hover{background:rgba(249,208,95,0.15);border-color:rgba(249,208,95,0.35);color:var(--gold);transform:scale(1.05)}
+.dpad-btn:active{transform:scale(0.92);background:rgba(249,208,95,0.25)}
+.dpad-btn.risk{border-color:rgba(255,112,136,0.25);color:rgba(255,112,136,0.6)}
+.dpad-btn.risk:hover{background:rgba(255,112,136,0.12);border-color:rgba(255,112,136,0.4);color:var(--red)}
+.dpad-center{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);display:grid;place-items:center;font-size:10px;color:rgba(255,255,255,0.3);font-weight:900}
+.dpad-risk{font-size:8px;color:rgba(255,112,136,0.5)}
+.dialog-overlay{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);z-index:30;background:var(--surface);border:1px solid rgba(249,208,95,0.35);border-radius:12px;padding:16px 22px;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.5)}
+.dialog-overlay .npc-name{color:var(--gold);font-weight:900;font-size:15px;margin-bottom:6px}
+.dialog-overlay .npc-text{color:var(--ink);font-size:13px;line-height:1.55;margin-bottom:10px;white-space:pre-wrap}
+.dialog-actions{display:flex;gap:6px;flex-wrap:wrap}
+.dialog-btn{padding:6px 14px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#cfe7ff;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;transition:all 120ms}
+.dialog-btn:hover{background:rgba(249,208,95,0.1);border-color:var(--gold);color:var(--gold)}
+.dialog-btn.close{background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.06);color:var(--muted)}
+.craft-panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:40;background:var(--surface);border:2px solid var(--gold);border-radius:16px;padding:20px 28px;min-width:380px;box-shadow:0 8px 60px rgba(0,0,0,0.7)}
+.craft-panel h3{color:var(--gold);font-size:18px;text-align:center;margin-bottom:12px}
+.craft-slot{width:70px;height:70px;border:2px dashed rgba(255,255,255,0.2);border-radius:10px;display:grid;place-items:center;font-size:28px;background:rgba(255,255,255,0.03);transition:all 150ms}
+.craft-slot.filled{border-color:rgba(249,208,95,0.5);background:rgba(249,208,95,0.08)}
+.craft-result{width:80px;height:80px;border:2px solid rgba(74,222,128,0.3);border-radius:10px;display:grid;place-items:center;font-size:32px;background:rgba(74,222,128,0.05)}
+.shop-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;background:var(--surface);border:1px solid rgba(249,208,95,0.3);border-radius:12px;padding:16px 20px;min-width:260px;box-shadow:0 8px 40px rgba(0,0,0,0.5)}
+.shop-overlay h3{color:var(--gold);font-size:15px;margin-bottom:8px}
+.shop-item{display:flex;align-items:center;gap:8px;padding:6px 8px;margin:3px 0;background:rgba(255,255,255,0.02);border-radius:6px}
+.shop-item .sname{flex:1;font-weight:700;font-size:12px}
+.shop-item .sprice{color:var(--gold);font-weight:900;font-size:12px}
+.shop-item .sact{padding:4px 10px;border:0;background:var(--grad-gold);color:#1d1300;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700}
+.popup-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;background:var(--surface);border:2px solid var(--gold);border-radius:16px;padding:28px 32px;min-width:400px;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 60px rgba(0,0,0,0.8)}
+.popup-panel h3{color:var(--gold);font-size:22px;margin-bottom:12px;text-align:center}
+.inv-panel{position:absolute;top:10px;left:10px;z-index:15;width:350px;max-width:calc(100vw - 24px);max-height:62%;background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;padding:9px;overflow-y:auto;backdrop-filter:blur(8px);box-shadow:0 8px 28px rgba(0,0,0,0.32)}
+.inv-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:900;color:var(--gold);margin-bottom:7px;white-space:nowrap}
+.inv-item{display:grid;grid-template-columns:minmax(0,1fr)42px 54px 76px;align-items:center;gap:6px;padding:5px 6px;font-size:11px;background:rgba(255,255,255,0.025);border-radius:6px;margin:4px 0;cursor:pointer;transition:all 150ms}
+.inv-item:hover{background:rgba(255,255,255,0.05)}
+.inv-item .iname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:var(--ink)}
+.inv-item .iwt{color:var(--muted);font-size:10px;text-align:right;white-space:nowrap}
+.inv-item button{height:22px;border:0;border-radius:4px;cursor:pointer;font-size:9px;font-weight:900;text-transform:uppercase;padding:0 5px;white-space:nowrap}
+.inv-item .idrop{background:rgba(255,112,136,0.18);color:var(--red);border:1px solid rgba(255,112,136,0.28)}
+.inv-item .ieat{background:rgba(74,222,128,0.13);color:var(--green);border:1px solid rgba(74,222,128,0.25)}
+.inv-panel.collapsed{width:230px;max-height:none;overflow:hidden}.inv-panel.collapsed .inv-list{display:none}.inv-toggle{width:26px;height:24px;border:1px solid rgba(249,208,95,0.28);background:rgba(249,208,95,0.08);color:var(--gold);border-radius:5px;cursor:pointer;font-weight:900;line-height:1}.mini-map{position:absolute;top:8px;right:8px;z-index:15;width:210px;height:170px;background:var(--glass);border:1px solid var(--glass-border);border-radius:8px;overflow:hidden;backdrop-filter:blur(8px)}
+.full-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.88);backdrop-filter:blur(14px)}
+.overlay-card{text-align:center;padding:40px 50px;background:var(--surface);border:1px solid rgba(249,208,95,0.3);border-radius:16px;box-shadow:0 0 80px rgba(249,208,95,0.08);max-width:500px}
+.overlay-card h2{font-size:32px;margin-bottom:8px;color:var(--gold)}
+.overlay-card p{color:var(--muted);margin-bottom:14px}
+.overlay-card .stat-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;font-weight:700;font-size:14px;color:var(--ink)}
+.toast{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:80;padding:8px 22px;border:1px solid rgba(247,201,95,0.4);background:rgba(8,17,31,0.92);color:#fff7d6;font-weight:900;font-size:13px;border-radius:6px;pointer-events:none;animation:toastIn 220ms ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.hpflash{transition:background 0.3s}.hpflash.dmg{background:rgba(255,112,136,0.3)}.hpflash.heal{background:rgba(74,222,128,0.3)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes wallFlash{0%{opacity:0.38}100%{opacity:0}}.wall-flash{position:fixed;inset:0;z-index:500;pointer-events:none;background:rgba(220,20,20,1);animation:wallFlash 0.5s ease-out forwards}
+@media(max-width:860px){.dpad{right:4px;bottom:40px;grid-template-columns:44px 44px 44px;grid-template-rows:44px 44px 44px}.dpad-btn{width:44px;height:44px;font-size:16px}.dpad-center{width:44px;height:44px}}
+</style></head><body><div id="app">
+<div class="login-page" v-if="phase==='login'"><div class="login-card"><h1>🏫 World of Zuul</h1><div class="sub">· Campus Adventure ·</div><div class="login-tabs"><button class="login-tab" :class="{active:loginMode==='register'}" @click="loginMode='register'">📝 注册</button><button class="login-tab" :class="{active:loginMode==='signin'}" @click="loginMode='signin'">🔑 登录</button></div><input class="login-field" v-model="loginName" placeholder="用户名" @keyup.enter="doLogin" autofocus/><input class="login-field" v-model="loginPass" :placeholder="loginMode==='register'?'设置密码':'输入密码'" type="password" @keyup.enter="doLogin"/><button class="btn-login" @click="doLogin" :disabled="!loginName.trim()||loading">{{loading?'处理中...':(loginMode==='register'?'📝 注册并进入':'🔑 登录')}}</button><div class="login-err">{{loginError}}</div></div></div>
+<div class="char-select" v-if="phase==='select'"><div class="char-card"><h2>🎭 选择角色形象</h2><div class="char-grid"><div class="char-option" v-for="i in playerChoices" :key="i" :class="{selected:selectedChar===i}" @click="selectedChar=i"><img :src="'/assets/player'+i+'.png?v='+assetVersion" :alt="'角色'+i" @error="$event.target.style.display='none'"/><div style="font-size:10px;color:var(--muted);margin-top:4px">角色 {{i}}</div></div></div><button class="btn-gold" @click="phase='time'" :disabled="!selectedChar">🎮 下一步：选择时间</button></div></div>
+<div class="char-select" v-if="phase==='time'"><div class="char-card"><h2>🕐 选择出发时间</h2><p style="color:var(--muted);margin-bottom:16px">不同的时间会影响 NPC 的出现和游戏体验</p><div class="char-grid"><div class="char-option" :class="{selected:selectedTime===480}" @click="selectedTime=480"><div style="font-size:40px">🌅</div><div style="color:var(--ink);font-weight:700;margin-top:6px">早晨</div><div style="color:var(--muted);font-size:11px">08:00</div><div style="color:var(--muted);font-size:9px;margin-top:2px">保安上班，适合探索</div></div><div class="char-option" :class="{selected:selectedTime===840}" @click="selectedTime=840"><div style="font-size:40px">☀️</div><div style="color:var(--ink);font-weight:700;margin-top:6px">下午</div><div style="color:var(--muted);font-size:11px">14:00</div><div style="color:var(--muted);font-size:9px;margin-top:2px">咖啡厅营业中</div></div><div class="char-option" :class="{selected:selectedTime===1080}" @click="selectedTime=1080"><div style="font-size:40px">🌆</div><div style="color:var(--ink);font-weight:700;margin-top:6px">傍晚</div><div style="color:var(--muted);font-size:11px">18:00</div><div style="color:var(--muted);font-size:9px;margin-top:2px">神谕者即将出现</div></div><div class="char-option" :class="{selected:selectedTime===1320}" @click="selectedTime=1320"><div style="font-size:40px">🌙</div><div style="color:var(--ink);font-weight:700;margin-top:6px">深夜</div><div style="color:var(--muted);font-size:11px">22:00</div><div style="color:var(--muted);font-size:9px;margin-top:2px">神谕者在线，氛围神秘</div></div></div><button class="btn-gold" @click="startGame" :disabled="!selectedTime">🎮 开始冒险！</button></div></div>
+<template v-if="phase==='playing'"><header class="top-hud"><span class="hud-title">🏫 Zuul</span><div class="hud-stats"><div class="hst"><span class="lbl">{{state.timeOfDay||'早晨'}}</span><span class="val gold" style="font-size:10px">{{state.timeDisplay||'08:00'}} · D{{state.dayCount||1}}</span></div><div class="hst"><span class="lbl">EXP</span><span class="val blue">{{state.exp}}/{{state.expToNext}}</span><div class="bar"><div class="bar-fill exp" :style="{width:expPct+'%'}"></div></div><span style="font-size:9px;color:var(--muted)">Lv.{{state.level}}</span></div><div class="hst" :class="{hpflash:hpFlash}"><span class="lbl">❤️ HP</span><span class="val" :style="{color:hpColor}">{{state.health}}</span><div class="bar"><div class="bar-fill hp" :style="{width:hpPct+'%',background:hpColor}"></div></div></div><div class="hst"><span class="lbl">⚖️ 负重</span><span class="val blue">{{state.currentWeight}}/{{state.maxWeight}}</span><div class="bar"><div class="bar-fill wt" :style="{width:wtPct+'%'}"></div></div></div><div class="hst"><span class="lbl">🪙 金币</span><span class="val gold">{{state.gold}}G</span></div></div><button class="hud-btn accent" @click="showInfo('status')">📊 状态</button><button class="hud-btn accent" @click="showInfo('quests')">📋 任务</button><button class="hud-btn accent" @click="runCmd('save quicksave')" :disabled="!state.loggedIn">💾 存档</button><div style="position:relative"><button class="hud-btn" @click="showSettings=!showSettings">⚙ 设置</button><div class="settings-dropdown" v-if="showSettings" @click.stop><button @click="paused=true;showSettings=false">⏸ 暂停</button><button class="danger" @click="doReset();showSettings=false">🔄 重新开始</button><button class="danger" @click="doLogout();showSettings=false">🚪 退出登录</button></div></div></header><div class="game-area" ref="gameAreaRef" tabindex="0" :style="{filter:dayFilter}" @click="gameAreaRef&&gameAreaRef.focus()" @keydown="onKeyDown" @keyup="onKeyUp"><canvas ref="canvasRef" style="position:absolute;inset:0;z-index:1"></canvas><div class="scene-transition" :class="{show:sceneTransition}"></div><div v-for="n in currentNpcs" :key="n.name" class="clickable" :style="{position:'absolute',left:n.cx+'%',top:n.cy+'%',transform:'translate(-50%,-50%)',zIndex:10}" @click.stop="talkToNpc(n.name)" :title="'与 '+n.label+' 对话'"><div :style="{width:(avatarSize+36)+'px',height:(avatarSize+56)+'px',display:'flex',flexDirection:'column',alignItems:'center',pointerEvents:'none'}"><div v-if="guardHint&&roomKey==='outside'&&n.name==='guard'" class="guard-guide"><div class="guard-guide-text">请与保安对话开启游戏</div><div class="guard-guide-arrow"></div></div><img v-if="hasNpcImg(n.name)" :src="'/assets/'+npcImgFile(n.name)" :style="{width:avatarSize+'px',height:avatarSize+'px',objectFit:'contain',imageRendering:'auto'}"/><div v-else style="width:120px;height:128px;border-radius:10px;display:grid;place-items:center;font-size:72px" :style="{background:n.bg,boxShadow:'0 0 16px '+n.glow}">{{n.icon}}</div><div style="font-size:12px;color:#fff;font-weight:700;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,0.8)">{{n.label}}</div></div></div><div v-for="it in currentItems" :key="it.name" class="clickable" :style="{position:'absolute',left:it.cx+'%',top:it.cy+'%',transform:'translate(-50%,-50%)',zIndex:9}" @click.stop="handleItemClick(it.name)" :title="'拾取 '+it.label"><div style="pointer-events:none;text-align:center"><div v-if="mapHint&&!hasItem('campus_map')&&roomKey==='outside'&&it.name==='campus_map'" class="map-guide"><div class="map-guide-text">拾取以解锁地图</div><div class="map-guide-arrow"></div></div><div style="font-size:30px;animation:bob 1.2s ease-in-out infinite">{{it.icon}}</div><div style="font-size:12px;color:var(--gold);font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.8)">{{it.label}}</div></div></div><div v-for="obj in specialObjects" :key="obj.type" class="clickable" :style="{position:'absolute',left:obj.cx+'%',top:obj.cy+'%',transform:'translate(-50%,-50%)',zIndex:12}" @click.stop="handleSpecial(obj)" :title="obj.hint"><div style="pointer-events:none;text-align:center"><div style="font-size:44px;animation:bob 1.8s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(249,208,95,0.6))">{{obj.icon}}</div><div style="font-size:12px;color:var(--gold);font-weight:900;text-shadow:0 1px 4px rgba(0,0,0,0.9)">{{obj.label}}</div><div style="font-size:9px;color:rgba(255,255,255,0.6);text-shadow:0 1px 3px rgba(0,0,0,0.8)">{{obj.hint}}</div></div></div><div v-if="selectedChar>0" :style="{position:'absolute',left:playerLeft+'%',top:playerTop+'%',transform:'translate(-50%,-50%)',zIndex:11,pointerEvents:'none'}"><img :src="playerImageSrc" :style="{width:avatarSize+'px',height:avatarSize+'px',objectFit:'contain',imageRendering:'auto',transform:'scaleX('+playerFlip+')',filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.5))'}"/></div><div class="dpad"><div></div><button class="dpad-btn" :class="{risk:!exits.includes('north')}" @click="goRoom('north')" :title="exits.includes('north')?'向北':'⚠ 撞墙扣2HP'">▲</button><div></div><button class="dpad-btn" :class="{risk:!exits.includes('west')}" @click="goRoom('west')" :title="exits.includes('west')?'向西':'⚠ 撞墙扣2HP'">◀</button><div class="dpad-center">{{roomKey.toUpperCase()}}</div><button class="dpad-btn" :class="{risk:!exits.includes('east')}" @click="goRoom('east')" :title="exits.includes('east')?'向东':'⚠ 撞墙扣2HP'">▶</button><div></div><button class="dpad-btn" :class="{risk:!exits.includes('south')}" @click="goRoom('south')" :title="exits.includes('south')?'向南':'⚠ 撞墙扣2HP'">▼</button><div></div></div><div class="dialog-overlay" v-if="dialog.show" @click.stop><div class="npc-name">💬 {{dialog.npc}}</div><div class="npc-text">{{dialog.text}}</div><div class="dialog-actions"><button class="dialog-btn" @click="startQuiz()" v-if="dialog.showAnswer&&dialog.quizStep===0" style="background:rgba(74,222,128,0.15);border-color:var(--green);color:var(--green);font-weight:900">✅ 好的，请出题</button><button class="dialog-btn" @click="answer('A')" v-if="dialog.showAnswer&&dialog.quizStep===1" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:var(--green)">A: {{dialog.optA}}</button><button class="dialog-btn" @click="answer('B')" v-if="dialog.showAnswer&&dialog.quizStep===1" style="background:rgba(249,208,95,0.1);border-color:rgba(249,208,95,0.3);color:var(--gold)">B: {{dialog.optB}}</button><button class="dialog-btn" @click="answer('C')" v-if="dialog.showAnswer&&dialog.quizStep===1&&dialog.optC" style="background:rgba(255,112,136,0.08);border-color:rgba(255,112,136,0.2);color:var(--red)">C: {{dialog.optC}}</button><button class="dialog-btn" @click="shopOpen=true;dialog.show=false" v-if="dialog.isMerchant">🛒 打开商店</button><button class="dialog-btn close" @click="dialog.show=false;dialog.quizStep=0">关闭</button></div></div><div class="craft-panel" v-if="craftOpen" @click.stop><button @click="craftOpen=false;clearCraft()" style="position:absolute;top:8px;right:12px;background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer">✕</button><h3>⚗️ 合成工作台</h3><div style="display:flex;align-items:center;gap:16px;justify-content:center;margin:12px 0"><div class="craft-slot" :class="{filled:hasItem('code_data')}"><span v-if="hasItem('code_data')">💿</span><span v-else style="color:rgba(255,255,255,0.2)">+</span><div style="font-size:9px;color:var(--muted);margin-top:2px">code_data</div></div><span style="color:var(--gold);font-size:20px">+</span><div class="craft-slot" :class="{filled:hasItem('reference')}"><span v-if="hasItem('reference')">📄</span><span v-else style="color:rgba(255,255,255,0.2)">+</span><div style="font-size:9px;color:var(--muted);margin-top:2px">reference</div></div><span style="color:var(--gold);font-size:20px">+</span><div class="craft-slot" :class="{filled:hasItem('signature')}"><span v-if="hasItem('signature')">✍️</span><span v-else style="color:rgba(255,255,255,0.2)">+</span><div style="font-size:9px;color:var(--muted);margin-top:2px">signature</div></div><span style="color:var(--gold);font-size:24px">→</span><div class="craft-result"><span v-if="craftResult" @click="collectCraftResult()" style="font-size:36px;cursor:pointer" title="点击拾取">📦</span><span v-else-if="craftCountdown>0" style="font-size:22px;font-weight:900;color:var(--gold)">{{craftCountdown}}s</span><span v-else style="color:rgba(255,255,255,0.15);font-size:28px">?</span></div></div><div style="text-align:center"><button class="btn-gold" :disabled="!canCraft()||craftCountdown>0" @click="startCrafting()" style="font-size:14px;padding:8px 24px">{{craftCountdown>0?'⏳ 合成中...':'🔨 合成 perfect_report'}}</button></div><div v-if="!canCraft()" style="text-align:center;color:var(--red);font-size:11px;margin-top:6px">缺少：<span v-if="!hasItem('code_data')">code_data </span><span v-if="!hasItem('reference')">reference </span><span v-if="!hasItem('signature')">signature</span></div></div><div class="shop-overlay" v-if="shopOpen" @click.stop><h3>🛒 {{shopNpc}} 的商品</h3><div class="shop-item" v-for="s in shopItems" :key="s.name"><div style="flex:1"><span class="sname">{{s.name}}</span><div style="font-size:9px;color:var(--muted)">{{s.desc}}</div></div><span class="sprice">{{s.price}}G</span><button class="sact" @click="runCmd('buy '+s.name);shopOpen=false">购买</button></div><button class="dialog-btn close" style="margin-top:8px;width:100%" @click="shopOpen=false">关闭</button></div><div v-if="teleportOpen" @click.self="teleportOpen=false" style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.25);backdrop-filter:blur(2px)"><div class="overlay-card" style="max-width:440px;padding:24px 32px" @click.stop><h3 style="color:var(--gold);margin-bottom:4px">🌀 时空传送</h3><p style="color:var(--muted);font-size:12px;margin-bottom:16px">选择目标时间，然后随机传送到另一个房间</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="char-option" style="width:auto;height:auto;padding:14px 10px" :class="{selected:teleportTime===480}" @click="teleportTime=480"><div style="font-size:28px">🌅</div><div style="color:var(--ink);font-weight:700;font-size:12px">早晨 08:00</div></div><div class="char-option" style="width:auto;height:auto;padding:14px 10px" :class="{selected:teleportTime===840}" @click="teleportTime=840"><div style="font-size:28px">☀️</div><div style="color:var(--ink);font-weight:700;font-size:12px">下午 14:00</div></div><div class="char-option" style="width:auto;height:auto;padding:14px 10px" :class="{selected:teleportTime===1080}" @click="teleportTime=1080"><div style="font-size:28px">🌆</div><div style="color:var(--ink);font-weight:700;font-size:12px">傍晚 18:00</div></div><div class="char-option" style="width:auto;height:auto;padding:14px 10px" :class="{selected:teleportTime===1320}" @click="teleportTime=1320"><div style="font-size:28px">🌙</div><div style="color:var(--ink);font-weight:700;font-size:12px">深夜 22:00</div></div></div><button class="btn-gold" @click="doTeleport(teleportTime)" style="width:100%;margin-top:14px">🌀 传送！</button><button class="dialog-btn close" style="width:100%;margin-top:6px" @click="teleportOpen=false">取消</button></div></div><div class="full-overlay" v-if="paused" style="background:rgba(2,6,16,0.7);z-index:90" @click="paused=false"><div class="overlay-card" style="border-color:rgba(125,211,252,0.3)" @click.stop><h2 style="color:var(--ink)">⏸ 游戏暂停</h2><p>点击任意位置或按 ESC 继续</p><div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><button class="btn-gold" @click="paused=false">▶ 继续</button><button class="btn-gold" style="background:var(--red);color:#fff;box-shadow:none" @click="doReset()">🔄 重开</button></div></div></div><div v-if="infoShow" @click.stop style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:300;background:var(--surface);border:2px solid var(--gold);border-radius:16px;padding:28px 32px;min-width:400px;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 60px rgba(0,0,0,0.8)"><button @click="infoShow=false" style="position:absolute;top:10px;right:14px;background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer">✕</button><h3 style="color:var(--gold);font-size:18px;margin-bottom:10px">{{infoTitle}}</h3><pre style="color:var(--ink);font-size:14px;line-height:1.6;white-space:pre-wrap;font-family:inherit">{{infoContent}}</pre></div><div class="inv-panel" :class="{collapsed:invCollapsed}"><div class="inv-title"><span>🎒 背包 · {{state.inventoryItems.length}}件 / {{state.currentWeight}}/{{state.maxWeight}}kg</span><button class="inv-toggle" @click.stop="invCollapsed=!invCollapsed">{{invCollapsed?'＋':'－'}}</button></div><div class="inv-list"><div class="inv-item" v-for="item in state.inventoryItems" :key="item"><span class="iname" :style="{color:canViewItem(invName(item))?'var(--gold)':'',cursor:canViewItem(invName(item))?'pointer':'default'}" @click="viewItem(invName(item))">{{invName(item)}}</span><span class="iwt">{{invWt(item)}}kg</span><button class="ieat" @click.stop="runCmd('eat '+invName(item))">eat</button><button class="idrop" @click.stop="runCmd('drop '+invName(item))">abandon</button></div></div></div><div class="mini-map"><svg viewBox="0 0 160 120" style="width:100%;height:100%"><line v-for="l in mmLines" :x1="l.x1" :y1="l.y1" :x2="l.x2" :y2="l.y2" :stroke="visited.has(l.from)&&visited.has(l.to)?'rgba(140,210,255,0.3)':'rgba(140,210,255,0.04)'" stroke-width="1.2"/><circle v-for="n in mmNodes" :cx="n.x" :cy="n.y" r="8" :fill="visited.has(n.k)?n.fill:'#141e2a'" :stroke="roomKey===n.k?'#f7c95f':(visited.has(n.k)?'rgba(125,211,252,0.4)':'#1e2840')" :stroke-width="roomKey===n.k?2.5:1.2" style="cursor:pointer" @click="clickMmRoom(n.k)"/><text v-for="n in mmNodes" :x="n.x" :y="n.y+14" text-anchor="middle" :fill="visited.has(n.k)?'#c9dcf7':'#2a3040'" font-size="7" font-weight="700">{{n.label}}</text></svg></div></div><div v-if="mapOpen" @click.self="mapOpen=false" style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.25);backdrop-filter:blur(2px)"><div style="position:relative;max-width:90vw;max-height:85vh"><button @click="mapOpen=false" style="position:absolute;top:-28px;right:0;background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer;z-index:1">✕</button><img src="/assets/map_full.png" style="max-width:90vw;max-height:85vh;object-fit:contain;border-radius:12px;border:2px solid var(--gold);box-shadow:0 8px 60px rgba(0,0,0,0.8)" @error="$event.target.style.display='none'"/></div></div><div v-if="brochureOpen" @click.self="brochureOpen=false" style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.25);backdrop-filter:blur(2px)"><div class="overlay-card" style="max-width:580px;text-align:left;max-height:80vh;overflow-y:auto;padding:28px 36px" @click.stop><button @click="brochureOpen=false" style="position:absolute;top:10px;right:14px;background:none;border:0;color:var(--muted);font-size:22px;cursor:pointer">✕</button><h2 style="color:var(--gold);text-align:center;margin-bottom:14px">📖 欢迎手册</h2><div style="color:var(--ink);font-size:13px;line-height:1.8"><p style="margin-bottom:10px">欢迎来到 <span style="color:var(--gold);font-weight:700">World of Zuul · Campus Adventure</span>！</p><p style="margin-bottom:8px"><span style="color:var(--blue)">🎯 目标：</span>收集材料合成 <span style="color:var(--gold)">perfect_report</span> 并提交，修复校园网络系统。</p><p style="margin-bottom:8px"><span style="color:var(--blue)">📊 等级称号：</span>击败敌人获得经验，提升等级解锁新能力。</p><table style="width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12px;text-align:center"><tr style="background:rgba(249,208,95,0.1);color:var(--gold)"><th style="padding:4px 8px;border:1px solid rgba(249,208,95,0.2)">等级</th><th style="padding:4px 8px;border:1px solid rgba(249,208,95,0.2)">称号</th><th style="padding:4px 8px;border:1px solid rgba(249,208,95,0.2)">经验</th><th style="padding:4px 8px;border:1px solid rgba(249,208,95,0.2)">解锁</th></tr><tr><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">Lv.1</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">📚 新生</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">0</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06);font-size:11px">—</td></tr><tr style="background:rgba(255,255,255,0.02)"><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">Lv.2</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">🔍 见习探索者</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">60</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06);font-size:11px">🌀 传送室 + 神谕者</td></tr><tr><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">Lv.3</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">💡 青年研究者</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">150</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06);font-size:11px">属性提升</td></tr><tr style="background:rgba(255,255,255,0.02)"><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">Lv.4</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">🎓 资深学者</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">300</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06);font-size:11px">属性大幅提升</td></tr><tr><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">Lv.5</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">🏆 学术大师</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06)">500</td><td style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06);font-size:11px">⭐ 结局评分加成</td></tr></table><p style="margin-bottom:8px"><span style="color:var(--blue)">🏆 通关称号：</span>最终称号 = 等级称号 + 表现评价，如「🎓 资深学者 · 全能学者」</p><p style="margin-bottom:8px"><span style="color:var(--blue)">🎮 操作：</span>WASD / 方向键 移动 · 点击场景交互 · 背包中使用物品</p><p style="margin-bottom:8px"><span style="color:var(--blue)">📦 关键物品：</span></p><ul style="padding-left:18px;margin:4px 0 10px"><li>🗺️ campus_map — 解锁小地图</li><li>💿 code_data — 实验室获取（需 🔑 keycard）</li><li>📄 reference — 办公室获取</li><li>✍️ signature — 教学楼找老师答题</li><li>🔑 keycard — 办公室找管理员答题</li></ul><p style="margin-bottom:8px"><span style="color:var(--blue)">🌀 隐藏任务：</span>进入传送室 3 次以上，即可解锁隐藏结局「时空旅者」</p><p style="margin-bottom:8px"><span style="color:var(--blue)">🛒 商店：</span>咖啡厅可购买食物，吃了永久+5kg负重</p><p style="color:var(--gold);font-weight:700;text-align:center;margin-top:14px">祝你好运，冒险者！🍀</p></div></div></div></template>
+<div class="full-overlay" v-if="state.victory" @click.stop><div class="overlay-card"><h2>🎉 恭喜通关！</h2><div v-if="state.endingTitle" style="background:rgba(249,208,95,0.1);border:1px solid var(--gold);border-radius:8px;padding:8px 16px;margin:8px 0"><span style="color:var(--gold);font-size:20px;font-weight:900">🏆 {{state.endingTitle}}</span><p style="margin:4px 0 0;font-size:13px">{{state.endingDesc}}</p></div><p>校园网络系统恢复正常！</p><div class="stat-row"><span>⭐ {{state.finalScore||state.score}}分</span><span>❤️ HP {{state.health}}</span><span>🪙 {{state.gold}}G</span><span>📊 LV.{{state.level}}</span></div><div class="stat-row" style="gap:12px;font-size:11px;color:var(--muted);margin-top:4px"><span>👣 {{state.stepCount}}步</span><span>📦 {{state.itemsCollected}}件</span></div><div style="margin-top:16px;display:flex;gap:10px;justify-content:center"><button class="btn-gold" @click="doReset">🔄 再来一局</button></div></div></div>
+<div class="full-overlay" v-if="state.health<=0&&!state.victory" @click.stop><div class="overlay-card" style="border-color:rgba(255,112,136,0.4)"><h2 style="color:var(--red)">💀 生命值耗尽</h2><p>冒险在这里结束了...</p><div class="stat-row"><span>⭐ {{state.score}}分</span><span>📊 LV.{{state.level}}</span></div><button class="btn-gold" @click="doReset" style="margin-top:16px">🔄 重新开始</button></div></div>
+<div class="wall-flash" v-if="wallHitFlash"></div><div class="toast" v-if="toast">{{toast}}</div></div>
+<script>const{createApp,ref,reactive,computed,watch}=Vue
+createApp({setup(){const phase=ref('login'),loginMode=ref('register'),loginName=ref(''),loginPass=ref(''),loginError=ref(''),loading=ref(false),toast=ref(''),hpFlash=ref(''),wallHitFlash=ref(false),showSettings=ref(false),paused=ref(false),canvasRef=ref(null),gameAreaRef=ref(null),selectedChar=ref(0),selectedTime=ref(480),infoShow=ref(false),infoTitle=ref(''),infoContent=ref(''),craftOpen=ref(false),craftResult=ref(''),craftCountdown=ref(0),shopOpen=ref(false),teleportOpen=ref(false),teleportTime=ref(480),shopNpc=ref(''),shopItems=ref([]),brochureOpen=ref(false),mapOpen=ref(false),guardHint=ref(true),mapHint=ref(false),invCollapsed=ref(false),commandText=ref(''),errorMsg=ref('');const logs=reactive([{id:1,msg:'欢迎来到 World of Zuul。可以点击场景操作，也可以在这里输入命令；常用命令：look、go east、take item、save quicksave。',system:true}]);let victorySaved=false,logSeq=2
+const state=reactive({playerName:'Adventurer',currentRoomName:'',score:0,health:10,currentWeight:0,maxWeight:10,roomDescription:'',inventoryItems:[],roomItems:[],availableExits:[],npcs:[],level:1,exp:0,expToNext:100,atk:10,def:5,sp:0,gold:0,inCombat:false,enemyName:null,enemyHp:0,enemyMaxHp:0,enemyAtk:0,enemyDef:0,enemyLevel:0,questList:[],timeDisplay:'08:00',timeOfDay:'早晨',dayCount:1,endingTitle:'',endingDesc:'',finalScore:0,stepCount:0,itemsCollected:0,enemiesDefeated:0,victory:false,questSummary:'',loggedIn:false})
+const assetVersion=Date.now()
+const playerChoices=[1,2,3]
+const visited=reactive(new Set()),dialog=reactive({show:false,npc:'',text:'',showAnswer:false,isMerchant:false,quizStep:0,optA:'',optB:'',optC:''})
+const roomKey=computed(()=>{const n=state.currentRoomName.toLowerCase();if(n.includes('teleport'))return'teleport';if(n.includes('office'))return'office';if(n.includes('lab'))return'lab';if(n.includes('pub'))return'pub';if(n.includes('theater'))return'theater';return'outside'})
+const exits=computed(()=>state.availableExits||[]),playerLeft=ref(65),playerTop=ref(90),playerFlip=ref(1),playerWalkFrame=ref(false),walkFrameTime=ref(0),movingRoom=ref(false),sceneTransition=ref(false),pressedKeys=reactive({north:false,south:false,west:false,east:false}),moveLoopId=ref(0),lastMoveTime=ref(0),maxHp=computed(()=>10),hpPct=computed(()=>Math.max(0,Math.min(100,state.health/maxHp.value*100))),wtPct=computed(()=>state.maxWeight?Math.min(100,state.currentWeight/state.maxWeight*100):0),expPct=computed(()=>state.expToNext?Math.min(100,state.exp/state.expToNext*100):100),hpColor=computed(()=>hpPct.value<=25?'var(--red)':hpPct.value<=50?'var(--gold)':'var(--green)'),dayFilter=computed(()=>{const h=parseInt(state.timeDisplay?.split(':')[0]||'12');if(h>=6&&h<18)return'brightness(1)';if(h<20)return'brightness(0.7) sepia(0.2)';return'brightness(0.5) hue-rotate(15deg)'}),avatarSize=computed(()=>['pub','office'].includes(roomKey.value)?288:144),playerImageSrc=computed(()=>'/assets/player'+selectedChar.value+(playerWalkFrame.value?'_walk':'')+'.png?v='+assetVersion)
+const npcMap={outside:[{name:'guard',cx:50,cy:86,icon:'👮',label:'保安',bg:'rgba(74,222,128,0.2)',glow:'rgba(74,222,128,0.4)'}],theater:[{name:'lecturer',cx:65,cy:64,icon:'👩‍🏫',label:'老师',bg:'rgba(249,208,95,0.2)',glow:'rgba(249,208,95,0.4)'}],pub:[{name:'barista',cx:20,cy:60,icon:'🧑‍🍳',label:'咖啡师',bg:'rgba(180,120,80,0.2)',glow:'rgba(180,120,80,0.4)'}],lab:[{name:'student',cx:35,cy:88,icon:'🧑‍💻',label:'学生',bg:'rgba(96,165,250,0.2)',glow:'rgba(96,165,250,0.4)'}],office:[{name:'admin',cx:35,cy:75,icon:'👩‍💼',label:'管理员',bg:'rgba(192,132,252,0.2)',glow:'rgba(192,132,252,0.4)'}],teleport:[{name:'oracle',cx:50,cy:88,icon:'🧙',label:'神谕者',bg:'rgba(244,114,182,0.2)',glow:'rgba(244,114,182,0.4)'}]}
+const npcImgMap={guard:'guard.png',lecturer:'lecturer.png',barista:'barista.png',student:'student.png',admin:'admin.png',oracle:'oracle.png'}
+const itemMap={outside:[{name:'campus_map',cx:65,cy:50,icon:'🗺️',label:'校园地图'},{name:'welcome_brochure',cx:35,cy:50,icon:'📖',label:'欢迎手册'}],theater:[{name:'notebook',cx:30,cy:60,icon:'📓',label:'笔记本'},{name:'pen',cx:40,cy:70,icon:'🖊️',label:'钢笔'},{name:'signature',cx:50,cy:60,icon:'✍️',label:'导师签名'}],pub:[{name:'cookie',cx:38,cy:66,icon:'🍪',label:'魔法饼干'},{name:'coffee',cx:60,cy:64,icon:'☕',label:'咖啡'}],lab:[{name:'code_data',cx:50,cy:55,icon:'💿',label:'代码数据'},{name:'programming_manual',cx:22,cy:68,icon:'📘',label:'编程手册'},{name:'usb_drive',cx:70,cy:70,icon:'💾',label:'U盘'}],office:[{name:'reference',cx:70,cy:40,icon:'📄',label:'参考文献'},{name:'keycard',cx:55,cy:70,icon:'🔑',label:'门禁卡'},{name:'report_template',cx:30,cy:50,icon:'📝',label:'报告模板'}],teleport:[{name:'teleport_shard',cx:60,cy:64,icon:'💎',label:'传送碎片'}]}
+const currentNpcs=computed(()=>{const rk=roomKey.value,names=state.npcs||[];return(npcMap[rk]||[]).filter(n=>names.includes(n.name))}),currentItems=computed(()=>{const rk=roomKey.value,roomItems=state.roomItems.map(i=>i.split(' (')[0]);return(itemMap[rk]||[]).filter(it=>roomItems.includes(it.name))}),specialObjects=computed(()=>{const rk=roomKey.value,objs=[];if(rk==='outside'){const hasReport=state.inventoryItems.some(i=>i.startsWith('perfect_report'));objs.push({type:'submit',cx:25,cy:72,icon:'📮',label:'📮 提交箱',hint:hasReport?'🎯 点击提交！':'需要提交 perfect_report',action:'submit'})}if(rk==='teleport')objs.push({type:'teleport',cx:50,cy:30,icon:'🌀',label:'时空传送门',hint:'调整时间 + 随机传送',action:'teleport'});if(rk==='lab'){const hasAll=hasItem('code_data')&&hasItem('reference')&&hasItem('signature');objs.push({type:'combine',cx:50,cy:85,icon:'⚗️',label:'合成工作台',hint:hasAll?'🎯 材料齐全！':'点击打开合成台',action:'workbench'})}return objs})
+function invName(s){return s.split(' (')[0]}function invWt(s){const m=s.match(/\((\d+)\)/);return m?m[1]:'?'}function hasItem(name){return state.inventoryItems.some(i=>i.startsWith(name))}function canViewItem(name){return['welcome_brochure','campus_map'].includes(name)}function viewItem(name){if(name==='welcome_brochure')brochureOpen.value=true;else if(name==='campus_map')mapOpen.value=true}function hasNpcImg(name){return true}function npcImgFile(name){return npcImgMap[name]||''}
+async function runCmd(cmd){cmd=(cmd||'').trim();if(!cmd||loading.value||paused.value)return;loading.value=true;errorMsg.value='';const prevHealth=state.health;try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});const j=await r.json();const msg=j.message||'';logs.push({id:logSeq++,cmd,msg:msg||'没有返回内容',error:!j.success});if(logs.length>80)logs.shift();if(j.success){Object.assign(state,j.gameState);const k=roomKey.value;if(k)visited.add(k);if(state.health>prevHealth)hpFlash.value='heal';else if(state.health<prevHealth)hpFlash.value='dmg';setTimeout(()=>hpFlash.value='',400);if(cmd.startsWith('go ')&&state.health<prevHealth){wallHitFlash.value=true;setTimeout(()=>wallHitFlash.value=false,500)}if(state.loggedIn&&phase.value==='login')phase.value='select';if(state.victory&&state.loggedIn&&!victorySaved){victorySaved=true;fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'save autosave'})}).catch(()=>{})}if(cmd.startsWith('save '))toastMsg('已保存存档');else if(cmd.startsWith('load '))toastMsg('已读取存档');else if(cmd.startsWith('login ')&&msg.includes('成功'))toastMsg('登录成功，选择角色')}else{errorMsg.value=msg;toastMsg('???'+msg)}}catch(e){errorMsg.value='连接失败';logs.push({id:logSeq++,cmd,msg:'连接失败',error:true});toastMsg('连接失败')}finally{loading.value=false}}
+async function runCmdAsync(cmd){loading.value=true;try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});const j=await r.json();if(j.success)Object.assign(state,j.gameState)}catch(e){}finally{loading.value=false}}
+async function doLogin(){loginError.value='';if(!loginName.value.trim())return;const cmd=loginMode.value==='register'?'register':'login';await runCmd(cmd+' '+loginName.value.trim()+' '+(loginPass.value||''));if(!state.loggedIn)loginError.value=loginMode.value==='register'?'注册失败，可能用户名已存在':'登录失败，请检查用户名和密码'}
+async function doReset(){paused.value=false;showSettings.value=false;victorySaved=false;await fetch('/api/game/reset',{method:'POST'});const r=await fetch('/api/game/state');Object.assign(state,await r.json());phase.value='playing';visited.clear()}
+function doLogout(){paused.value=false;showSettings.value=false;fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'logout'})}).catch(()=>{});phase.value='login';loginPass.value='';loginError.value='';visited.clear()}
+async function startGame(){if(selectedChar.value>0){resetPlayerPosition();await fetch('/api/game/reset',{method:'POST'});await fetch('/api/game/time',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minutes:selectedTime.value||480})});const r=await fetch('/api/game/state');Object.assign(state,await r.json());phase.value='playing';setTimeout(()=>gameAreaRef.value&&gameAreaRef.value.focus(),80)}}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+async function goRoom(dir,entryDir,carry){if(movingRoom.value||loading.value)return;if(!exits.value.includes(dir)){await runCmd('go '+dir);return}stopMoving();movingRoom.value=true;sceneTransition.value=true;await sleep(450);await runCmd('go '+dir);resetPlayerPosition(entryDir||dir,carry);setTimeout(drawRoomBackground,30);await sleep(120);sceneTransition.value=false;await sleep(450);movingRoom.value=false;setTimeout(()=>gameAreaRef.value&&gameAreaRef.value.focus(),20)}
+async function talkToNpc(npc){if(npc==='guard'){guardHint.value=false;if(!hasItem('campus_map'))mapHint.value=true}dialog.npc=npc;dialog.showAnswer=false;dialog.isMerchant=(npc==='barista');dialog.quizStep=0;dialog.show=true;dialog.text='...';try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'talk '+npc})});const j=await r.json();if(j.success){Object.assign(state,j.gameState);const msg=j.message||'';const si=msg.indexOf('['+npc+']');if(si>=0){let t=msg.substring(si).replace(/^\[.*?\]：?/,'');const nb=t.indexOf('\n[');if(nb>0)t=t.substring(0,nb);dialog.text=t.trim();dialog.showAnswer=(npc==='lecturer'||npc==='admin')}else{dialog.text=msg;dialog.showAnswer=false}}}catch(e){dialog.text='(连接失败)'}}
+function startQuiz(){dialog.quizStep=1;if(dialog.npc==='lecturer'){dialog.text='【题目】JVM 是什么？';dialog.optA='Java 虚拟机';dialog.optB='Java 编译器';dialog.optC='Java 文档工具'}else{dialog.text='【题目】HTTP 404 状态码表示什么？';dialog.optA='服务器内部错误';dialog.optB='资源未找到';dialog.optC='请求超时'}}
+async function answer(choice){dialog.show=false;dialog.quizStep=0;try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:'answer '+choice})});const j=await r.json();if(j.success){Object.assign(state,j.gameState);infoShow.value=true;infoTitle.value=j.message.includes('正确')?'✅ 回答正确！':'❌ 回答错误';infoContent.value=j.message;setTimeout(()=>infoShow.value=false,2500)}}catch(e){}}
+async function handleItemClick(name){if(name==='code_data'&&!hasItem('keycard')){toastMsg('🔒 需要 keycard！去办公室找管理员答题获取');return}if(name==='keycard'&&dialog.showAnswer){toastMsg('📝 请先回答管理员的问题');return}if(name==='signature'&&dialog.showAnswer){toastMsg('📝 请先回答老师的问题');return}if(name==='welcome_brochure'){brochureOpen.value=true;runCmd('take '+name)}else if(name==='campus_map'){mapOpen.value=true;await runCmd('take '+name);if(hasItem('campus_map'))mapHint.value=false}else runCmd('take '+name)}
+function openWorkbench(){if(roomKey.value!=='lab'){runCmd('combine');return}craftOpen.value=true;craftResult.value='';craftCountdown.value=0}
+function canCraft(){return hasItem('code_data')&&hasItem('reference')&&hasItem('signature')}
+async function startCrafting(){if(!canCraft()||craftCountdown.value>0)return;craftCountdown.value=5;const t=setInterval(()=>{craftCountdown.value--;if(craftCountdown.value<=0){clearInterval(t);finishCraft()}},1000)}
+async function finishCraft(){await runCmdAsync('combine perfect_report');craftResult.value='perfect_report';toastMsg('✨ 合成完成！点击 📦 拾取！')}
+function collectCraftResult(){if(!craftResult.value)return;craftOpen.value=false;craftResult.value='';toastMsg('✅ perfect_report 已放入背包！')}
+function clearCraft(){craftResult.value='';craftCountdown.value=0}
+function handleSpecial(obj){if(obj.action==='submit')handleSubmit();else if(obj.action==='workbench')openWorkbench();else if(obj.action==='teleport'){const ts=state.timeDisplay||'08:00';const m=parseInt(ts.split(':')[0])*60+parseInt(ts.split(':')[1]);if(m>=1080||m<360){teleportOpen.value=true}else{toastMsg('🌀 时空传送门只在夜晚(18:00-6:00)激活…当前：'+ts)}}}
+async function doTeleport(minutes){teleportOpen.value=false;await fetch('/api/game/time',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({minutes:minutes})});const d=['north','south','east','west'];runCmd('go '+d[Math.floor(Math.random()*4)])}
+async function handleSubmit(){const has=state.inventoryItems.some(i=>i.startsWith('perfect_report'));if(!has){toastMsg('还没有 perfect_report！');return}await runCmdAsync('drop perfect_report')}
+async function showInfo(cmd){infoTitle.value=cmd==='status'?'📊 角色状态':'📋 任务日志';infoContent.value='加载中...';infoShow.value=true;try{const r=await fetch('/api/game/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});const j=await r.json();if(j.success){Object.assign(state,j.gameState);infoContent.value=j.message||'(无内容)'}}catch(e){infoContent.value='加载失败'}finally{loading.value=false}}
+function resetPlayerPosition(entryDir,carry){const minX=5,maxX=95,minY=6,maxY=94;if(entryDir==='west'){playerLeft.value=92;playerTop.value=Math.max(minY,Math.min(maxY,carry?.y??78))}else if(entryDir==='east'){playerLeft.value=8;playerTop.value=Math.max(minY,Math.min(maxY,carry?.y??78))}else if(entryDir==='north'){playerLeft.value=Math.max(minX,Math.min(maxX,carry?.x??50));playerTop.value=92}else if(entryDir==='south'){playerLeft.value=Math.max(minX,Math.min(maxX,carry?.x??50));playerTop.value=8}else{playerLeft.value=roomKey.value==='outside'?65:50;playerTop.value=roomKey.value==='outside'?90:78}}
+function canMoveNow(){return !(movingRoom.value||loading.value||paused.value||dialog.show||infoShow.value||craftOpen.value||shopOpen.value)}
+async function switchRoom(dir,carry){if(!exits.value.includes(dir)){toastMsg('\u8fd9\u91cc\u6ca1\u6709\u901a\u8def');return false}await goRoom(dir,dir,carry);return true}
+async function tryMoveTo(x,y,dx,dy){const minX=5,maxX=95,minY=6,maxY=94;if(dx<0&&x<=minX){playerLeft.value=minX;playerTop.value=Math.max(minY,Math.min(maxY,y));await switchRoom('west',{y:playerTop.value});return}if(dx>0&&x>=maxX){playerLeft.value=maxX;playerTop.value=Math.max(minY,Math.min(maxY,y));await switchRoom('east',{y:playerTop.value});return}if(dy<0&&y<=minY){playerTop.value=minY;playerLeft.value=Math.max(minX,Math.min(maxX,x));await switchRoom('north',{x:playerLeft.value});return}if(dy>0&&y>=maxY){playerTop.value=maxY;playerLeft.value=Math.max(minX,Math.min(maxX,x));await switchRoom('south',{x:playerLeft.value});return}playerLeft.value=Math.max(minX,Math.min(maxX,x));playerTop.value=Math.max(minY,Math.min(maxY,y))}
+function activeVector(){const dx=(pressedKeys.east?1:0)-(pressedKeys.west?1:0),dy=(pressedKeys.south?1:0)-(pressedKeys.north?1:0);return{dx,dy,active:dx!==0||dy!==0}}
+function moveTick(ts){if(!lastMoveTime.value)lastMoveTime.value=ts;const dt=Math.min(0.05,(ts-lastMoveTime.value)/1000);lastMoveTime.value=ts;const v=activeVector();if(v.active&&canMoveNow()){if(!walkFrameTime.value)walkFrameTime.value=ts;if(ts-walkFrameTime.value>=500){playerWalkFrame.value=!playerWalkFrame.value;walkFrameTime.value=ts}const moveSpeed=15,len=Math.hypot(v.dx,v.dy)||1,dist=moveSpeed*dt,x=playerLeft.value+v.dx/len*dist,y=playerTop.value+v.dy/len*dist;tryMoveTo(x,y,v.dx,v.dy)}else{playerWalkFrame.value=false;walkFrameTime.value=0}moveLoopId.value=requestAnimationFrame(moveTick)}
+function startMoveLoop(){if(!moveLoopId.value){lastMoveTime.value=0;moveLoopId.value=requestAnimationFrame(moveTick)}}
+function stopMoveLoop(){if(moveLoopId.value){cancelAnimationFrame(moveLoopId.value);moveLoopId.value=0;lastMoveTime.value=0}}
+function stopMoving(){pressedKeys.north=false;pressedKeys.south=false;pressedKeys.west=false;pressedKeys.east=false;playerFlip.value=1;playerWalkFrame.value=false;walkFrameTime.value=0}
+function setMoveKey(k,on){if(k==='w'||k==='arrowup')pressedKeys.north=on;else if(k==='s'||k==='arrowdown')pressedKeys.south=on;else if(k==='a'||k==='arrowleft'){pressedKeys.west=on;if(on)playerFlip.value=1}else if(k==='d'||k==='arrowright'){pressedKeys.east=on;if(on)playerFlip.value=-1}else return false;return true}
+function onKeyDown(e){const t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;const k=e.key.toLowerCase();if(setMoveKey(k,true)){e.preventDefault();startMoveLoop()}else if(k==='escape'){e.preventDefault();stopMoving();paused.value=!paused.value}}
+function onKeyUp(e){const k=e.key.toLowerCase();if(setMoveKey(k,false)){e.preventDefault();if(!pressedKeys.north&&!pressedKeys.south&&!pressedKeys.west&&!pressedKeys.east){playerFlip.value=1;playerWalkFrame.value=false;walkFrameTime.value=0}}}
+const mmNodes=[{k:'outside',x:61,y:52,label:'外',fill:'#4ade80'},{k:'theater',x:111,y:46,label:'剧',fill:'#f9d05f'},{k:'pub',x:14,y:46,label:'咖',fill:'#c8a080'},{k:'lab',x:84,y:96,label:'实',fill:'#60a5fa'},{k:'office',x:142,y:68,label:'办',fill:'#c084fc'},{k:'teleport',x:80,y:10,label:'传',fill:'#f472b6'}],mmLines=[{from:'outside',to:'theater',x1:61,y1:52,x2:111,y2:46},{from:'outside',to:'pub',x1:61,y1:52,x2:14,y2:46},{from:'outside',to:'lab',x1:61,y1:52,x2:84,y2:96},{from:'theater',to:'office',x1:111,y1:46,x2:142,y2:68},{from:'lab',to:'office',x1:84,y1:96,x2:142,y2:68}],mmGraph={outside:{theater:'east',pub:'west',lab:'south'},theater:{outside:'west',teleport:'north',office:'east'},pub:{outside:'east'},lab:{outside:'north',office:'east'},office:{lab:'west',theater:'south'},teleport:{}}
+function clickMmRoom(k){if(k===roomKey.value)return;const d=mmGraph[roomKey.value]?.[k];if(d)runCmd('go '+d)}
+function toastMsg(m){toast.value=m;setTimeout(()=>toast.value='',2000)}
+watch(()=>dialog.isMerchant,(v)=>{if(v){shopNpc.value='咖啡师';shopItems.value=[{name:'cookie',price:10,desc:'🍪 魔法饼干 — 永久+5kg负重'},{name:'coffee',price:10,desc:'☕ 咖啡 — 永久+5kg负重'}]}})
+watch(roomKey,()=>setTimeout(drawRoomBackground,100))
+watch(phase,(v)=>{if(v==='playing'){setTimeout(drawRoomBackground,300);setTimeout(()=>gameAreaRef.value&&gameAreaRef.value.focus(),120);window.addEventListener('resize',drawRoomBackground)}else{stopMoving();stopMoveLoop()}})
+const roomBackgrounds={outside:'/assets/campus_outside.png',theater:'/assets/theater_room.png',pub:'/assets/pub.png',lab:'/assets/lab.png',office:'/assets/office.png',teleport:'/assets/teleport_chamber.png'},bgCache={}
+function paintFallback(ctx,W,H,rk){const themes={outside:['#87CEEB','#4a8a3a','#6a5a3a'],theater:['#3a2a40','#2a1a2a','#5a4a5a'],pub:['#5a4030','#3a2a1a','#6a4a3a'],lab:['#1a2a3a','#0a1a2a','#2a4a5a'],office:['#e8d8c0','#d8c8b0','#8a7a6a'],teleport:['#150a25','#0a0515','#301840']},t=themes[rk]||themes.outside,g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,t[0]);g.addColorStop(0.65,t[1]);g.addColorStop(1,t[2]);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+function paintExits(ctx,W,H){const ex=state.availableExits||[],ep={north:{x:W/2,y:10,w:200,h:30},south:{x:W/2,y:H-30,w:200,h:30},east:{x:W-30,y:H/2,w:30,h:200},west:{x:0,y:H/2,w:30,h:200}};for(const d of ex){const p=ep[d];if(!p)continue;ctx.fillStyle='rgba(249,208,95,0.1)';ctx.fillRect(p.x-p.w/2,p.y-p.h/2,p.w,p.h);ctx.fillStyle='rgba(249,208,95,0.3)';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText({north:'▲',south:'▼',east:'▶',west:'◀'}[d]+' '+d,p.x,p.y+(d==='north'?16:d==='south'?-4:0))}}
+function drawRoomBackground(){const c=canvasRef.value;if(!c)return;const W=c.offsetWidth,H=c.offsetHeight;if(!W||!H){requestAnimationFrame(drawRoomBackground);return}c.width=W;c.height=H;const ctx=c.getContext('2d'),rk=roomKey.value,src=roomBackgrounds[rk];paintFallback(ctx,W,H,rk);if(src){let img=bgCache[src];if(!img){img=new Image();bgCache[src]=img;img.onload=drawRoomBackground;img.src=src}if(img.complete&&img.naturalWidth>0){const scale=Math.max(W/img.naturalWidth,H/img.naturalHeight),dw=img.naturalWidth*scale,dh=img.naturalHeight*scale,dx=(W-dw)/2,dy=(H-dh)/2;ctx.drawImage(img,dx,dy,dw,dh);ctx.fillStyle='rgba(2,6,16,0.18)';ctx.fillRect(0,0,W,H)}}paintExits(ctx,W,H)}
+return{phase,loginMode,loginName,loginPass,loginError,loading,toast,hpFlash,wallHitFlash,assetVersion,playerChoices,showSettings,paused,sceneTransition,canvasRef,gameAreaRef,selectedChar,selectedTime,infoShow,infoTitle,infoContent,craftOpen,craftResult,craftCountdown,shopOpen,shopNpc,shopItems,teleportOpen,teleportTime,brochureOpen,mapOpen,guardHint,mapHint,invCollapsed,commandText,errorMsg,logs,state,visited,dialog,roomKey,exits,maxHp,hpPct,wtPct,expPct,hpColor,dayFilter,playerLeft,playerTop,playerFlip,playerWalkFrame,playerImageSrc,avatarSize,currentNpcs,currentItems,specialObjects,invName,invWt,hasItem,canViewItem,viewItem,hasNpcImg,npcImgFile,mmNodes,mmLines,runCmd,doLogin,doReset,doLogout,startGame,goRoom,talkToNpc,startQuiz,answer,handleItemClick,openWorkbench,canCraft,startCrafting,collectCraftResult,clearCraft,handleSpecial,handleSubmit,doTeleport,showInfo,onKeyDown,onKeyUp,clickMmRoom,toastMsg}
+}}).mount('#app')</script></body></html>

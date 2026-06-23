@@ -8,9 +8,9 @@ public final class GameConstants {
     }
 
     // ========== 生命值 ==========
-    public static final int INITIAL_HP = 100;
+    public static final int INITIAL_HP = 10;
     public static final int HP_GAIN_MOVE = 1;
-    public static final int HP_LOSS_WALL = 5;
+    public static final int HP_LOSS_WALL = 2;
     public static final int HP_GAIN_TALK = 5;
     public static final int HP_LOSS_TALK_FAIL = 2;
     public static final int HP_GAIN_TAKE = 3;
@@ -41,4 +41,31 @@ public final class GameConstants {
 
     // ========== 玩家默认值 ==========
     public static final String DEFAULT_PLAYER_NAME = "Adventurer";
+
+    // ========== 金币 ==========
+    public static final int INITIAL_GOLD = 0;
+
+    // ========== 战斗与属性 ==========
+    public static final int BASE_ATK = 10;
+    public static final int BASE_DEF = 5;
+    public static final int BASE_SP = 50;
+    public static final int BASE_LEVEL = 1;
+    public static final int BASE_EXP = 0;
+
+    // ========== 经验与升级 ==========
+    /** 每级所需经验值 (索引 = 等级-1)，0 表示已满级 */
+    public static final int[] EXP_THRESHOLDS = {
+        0, 60, 150, 300, 500
+    };
+    public static final int ATK_PER_LEVEL = 2;
+    public static final int DEF_PER_LEVEL = 1;
+    public static final int SP_PER_LEVEL = 5;
+    public static final int HP_PER_LEVEL = 10;
+    public static final int MAX_LEVEL = 5;
+
+    // ========== 战斗伤害公式常量 ==========
+    public static final double DAMAGE_VARIANCE = 0.2;    // 伤害随机波动 ±20%
+    public static final double DEF_REDUCTION_RATE = 0.5; // 防御减伤系数
+    public static final double DEFEND_REDUCTION = 0.5;   // 防御姿态额外减伤
+    public static final int FLEE_HP_PENALTY = 5;         // 逃跑惩罚扣血
 }

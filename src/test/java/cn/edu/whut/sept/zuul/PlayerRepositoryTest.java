@@ -13,6 +13,8 @@ import static org.junit.Assert.assertTrue;
 
 public class PlayerRepositoryTest {
 
+    private static final String TEST_PASSWORD = "test-password";
+
     private PlayerRepository createRepository() throws Exception
     {
         File tempDb = File.createTempFile("zuul-player-test-", ".db");
@@ -28,7 +30,7 @@ public class PlayerRepositoryTest {
     {
         PlayerRepository repository = createRepository();
 
-        PlayerRecord player = repository.createPlayer("Alice");
+        PlayerRecord player = repository.createPlayer("Alice", TEST_PASSWORD);
 
         assertNotNull(player);
         assertEquals("Alice", player.getName());
@@ -40,7 +42,7 @@ public class PlayerRepositoryTest {
     public void testFindByName() throws Exception
     {
         PlayerRepository repository = createRepository();
-        repository.createPlayer("Bob");
+        repository.createPlayer("Bob", TEST_PASSWORD);
 
         PlayerRecord found = repository.findByName("Bob");
         PlayerRecord missing = repository.findByName("Charlie");
@@ -50,24 +52,53 @@ public class PlayerRepositoryTest {
         assertNull(missing);
     }
 
-    @Test
-    public void testLoginCreatesNewPlayer() throws Exception
+    @Test(expected = IllegalArgumentException.class)
+    public void testLoginNonExistentUserFails() throws Exception
     {
         PlayerRepository repository = createRepository();
+        // 不存在的用户登录应抛出异常
+        repository.login("NewHero", TEST_PASSWORD);
+    }
 
-        PlayerLoginResult result = repository.login("NewHero");
+    @Test
+    public void testLoginWrongPasswordFails() throws Exception
+    {
+        PlayerRepository repository = createRepository();
+        repository.createPlayer("PasswordUser", "correct-password");
 
-        assertTrue(result.isNewlyCreated());
-        assertEquals("NewHero", result.getPlayer().getName());
+        try {
+            repository.login("PasswordUser", "wrong-password");
+            assertFalse("应抛出异常", true);
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("密码错误"));
+        }
+    }
+
+    @Test
+    public void testRegisterNewPlayer() throws Exception
+    {
+        PlayerRepository repository = createRepository();
+        PlayerRecord created = repository.createPlayer("RegisterHero", TEST_PASSWORD);
+        assertNotNull(created);
+        assertEquals("RegisterHero", created.getName());
+        assertTrue(created.getId() > 0);
+    }
+
+    @Test(expected = DuplicatePlayerException.class)
+    public void testRegisterDuplicateFails() throws Exception
+    {
+        PlayerRepository repository = createRepository();
+        repository.createPlayer("DupRegister", TEST_PASSWORD);
+        repository.createPlayer("DupRegister", TEST_PASSWORD);
     }
 
     @Test
     public void testLoginExistingPlayer() throws Exception
     {
         PlayerRepository repository = createRepository();
-        repository.createPlayer("ExistingHero");
+        repository.createPlayer("ExistingHero", TEST_PASSWORD);
 
-        PlayerLoginResult result = repository.login("ExistingHero");
+        PlayerLoginResult result = repository.login("ExistingHero", TEST_PASSWORD);
 
         assertFalse(result.isNewlyCreated());
         assertEquals("ExistingHero", result.getPlayer().getName());
@@ -77,16 +108,16 @@ public class PlayerRepositoryTest {
     public void testDuplicateUsernameDoesNotCrash() throws Exception
     {
         PlayerRepository repository = createRepository();
-        repository.createPlayer("DuplicateUser");
+        repository.createPlayer("DuplicateUser", TEST_PASSWORD);
 
         try {
-            repository.createPlayer("DuplicateUser");
+            repository.createPlayer("DuplicateUser", TEST_PASSWORD);
         } catch (DuplicatePlayerException e) {
             assertTrue(e.getMessage().contains("DuplicateUser"));
         }
 
-        PlayerLoginResult firstLogin = repository.login("DuplicateUser");
-        PlayerLoginResult secondLogin = repository.login("DuplicateUser");
+        PlayerLoginResult firstLogin = repository.login("DuplicateUser", TEST_PASSWORD);
+        PlayerLoginResult secondLogin = repository.login("DuplicateUser", TEST_PASSWORD);
 
         assertFalse(firstLogin.isNewlyCreated());
         assertFalse(secondLogin.isNewlyCreated());
@@ -97,6 +128,6 @@ public class PlayerRepositoryTest {
     public void testEmptyUsernameRejected() throws Exception
     {
         PlayerRepository repository = createRepository();
-        repository.login("   ");
+        repository.login("   ", TEST_PASSWORD);
     }
 }

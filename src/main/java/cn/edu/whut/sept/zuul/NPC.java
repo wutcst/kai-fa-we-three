@@ -11,6 +11,7 @@ public class NPC
 {
     private String name;
     private final Map<String, String> dialogues = new HashMap<>();
+    private Shop shop;
 
     /**
      * Create an NPC with a default dialogue (shown when no condition matches).
@@ -54,4 +55,8 @@ public class NPC
         }
         return dialogues.get("default");
     }
+
+    public boolean hasShop() { return shop != null; }
+    public Shop getShop() { return shop; }
+    public void setShop(Shop shop) { this.shop = shop; }
 }

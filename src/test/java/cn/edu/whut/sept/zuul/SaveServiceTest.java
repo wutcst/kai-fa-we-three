@@ -29,7 +29,12 @@ public class SaveServiceTest {
 
         private void login(String username) throws Exception
         {
-            game.applyPlayerLogin(playerRepository.login(username));
+            // 先注册再登录
+            PlayerRecord existing = playerRepository.findByName(username);
+            if (existing == null) {
+                playerRepository.createPlayer(username, "test-password");
+            }
+            game.applyPlayerLogin(playerRepository.login(username, "test-password"));
         }
     }
 

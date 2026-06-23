@@ -42,4 +42,13 @@ public class TeleportRoom extends Room
         }
         return candidates.get(random.nextInt(candidates.size()));
     }
+
+    /** 所有方向都显示为可用出口（点击任意方向触发随机传送） */
+    @Override
+    public List<String> getExitDirections()
+    {
+        List<String> dirs = new ArrayList<>();
+        dirs.add("north"); dirs.add("south"); dirs.add("east"); dirs.add("west");
+        return dirs;
+    }
 }

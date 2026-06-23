@@ -8,6 +8,15 @@ public class Player {
     private Room currentRoom;
     private int maxWeight;          // 最大负重上限
     private int currentWeight;      // 当前背包总重量
+    private int level = 1;
+    private int exp = 0;
+    private int atk = 10;
+    private int def = 5;
+    private int sp = 50;
+    private int gold = 0;           // 金币
+    private int hp = GameConstants.INITIAL_HP;
+    private int maxHp = GameConstants.INITIAL_HP;
+    private int score = 0;
     private List<Item> inventory;   // 随身物品集合 (背包)
 
     /**
@@ -40,6 +49,56 @@ public class Player {
 
     public void setCurrentRoom(Room room) {
         this.currentRoom = room;
+    }
+
+    public int getLevel() { return level; }
+    public void setLevel(int level) { this.level = level; }
+
+    public int getExp() { return exp; }
+    public void setExp(int exp) { this.exp = exp; }
+
+    public int getAtk() { return atk; }
+    public void setAtk(int atk) { this.atk = atk; }
+
+    public int getDef() { return def; }
+    public void setDef(int def) { this.def = def; }
+
+    public int getSp() { return sp; }
+    public void setSp(int sp) { this.sp = sp; }
+
+    public int getGold() { return gold; }
+    public void setGold(int gold) { this.gold = gold; }
+
+    public int getHp() { return hp; }
+    public void setHp(int hp) { this.hp = Math.max(0, hp); }  // 无上限，最低为0
+
+    public int getMaxHp() { return maxHp; }
+    public void setMaxHp(int maxHp) { this.maxHp = maxHp; }
+
+    public int getScore() { return score; }
+    public void setScore(int score) { this.score = score; }
+
+    public void addScore(int points) { this.score += points; }
+
+    /**
+     * 增加金币。
+     * @param amount 金币数量
+     */
+    public void addGold(int amount) {
+        this.gold += amount;
+    }
+
+    /**
+     * 消费金币，成功返回 true。
+     * @param amount 消费金额
+     * @return 是否消费成功
+     */
+    public boolean spendGold(int amount) {
+        if (this.gold < amount) {
+            return false;
+        }
+        this.gold -= amount;
+        return true;
     }
 
     // ==========================================
@@ -134,24 +193,97 @@ public class Player {
      * @return boolean 是否成功吃掉并生效
      */
     public boolean eat(String itemName) {
-        // 1. 通过特定名称判定是否是魔法饼干 (我们这里规定名字为 "cookie")
-        if (itemName.equals("cookie")) {
-
-            // 2. 尝试从背包里移除它
-            // 这里体现了架构的优雅：直接复用 dropItem，它会自动帮我们把饼干从集合移除，并减去饼干自身的重量！
-            Item eatenCookie = dropItem(itemName);
-
-            if (eatenCookie != null) {
-                // 3. 成功从背包拿出并吃下，修改最大负重上限 (假设增加 10kg 上限)
-                this.maxWeight += 10;
-                return true; // 返回成功状态
-            } else {
-                // 饼干不在背包里 (不能吃空气)
-                return false;
+        if (itemName.equals("cookie") || itemName.equals("coffee")) {
+            Item eaten = dropItem(itemName);
+            if (eaten != null) {
+                this.maxWeight += 5;
+                return true;
             }
+            return false;
         }
-
-        // 如果想吃的不是饼干，直接返回失败（交由 Game 层去提示“这东西不能吃”）
         return false;
+    }
+
+    // ==========================================
+    // 战斗与升级系统
+    // ==========================================
+
+    /**
+     * 获得经验值，达到阈值自动升级。
+     * @param amount 经验值
+     * @return 本次升级的等级数
+     */
+    public int gainExp(int amount) {
+        if (level >= GameConstants.MAX_LEVEL) {
+            return 0;
+        }
+        this.exp += amount;
+        int levelsGained = 0;
+        while (level < GameConstants.MAX_LEVEL
+                && exp >= GameConstants.EXP_THRESHOLDS[level]) {
+            levelUp();
+            levelsGained++;
+        }
+        return levelsGained;
+    }
+
+    /**
+     * 升级：提升属性并消耗对应经验。
+     */
+    private void levelUp() {
+        int requiredExp = GameConstants.EXP_THRESHOLDS[level];
+        this.exp -= requiredExp;
+        this.level++;
+        this.atk += GameConstants.ATK_PER_LEVEL;
+        this.def += GameConstants.DEF_PER_LEVEL;
+        this.sp += GameConstants.SP_PER_LEVEL;
+    }
+
+    /**
+     * 获取升级到下一级所需总经验。
+     * @return 所需经验值，满级返回 0
+     */
+    /**
+     * 获取当前等级对应的学术称号。
+     * @return 称号字符串
+     */
+    public String getLevelTitle() {
+        switch (level) {
+            case 1: return "📚 新生";
+            case 2: return "🔍 见习探索者";
+            case 3: return "💡 青年研究者";
+            case 4: return "🎓 资深学者";
+            case 5: return "🏆 学术大师";
+            default: return "📚 新生";
+        }
+    }
+
+    public int getExpToNextLevel() {
+        if (level >= GameConstants.MAX_LEVEL) {
+            return 0;
+        }
+        return GameConstants.EXP_THRESHOLDS[level];
+    }
+
+    /**
+     * 检查 SP 是否足够使用技能。
+     * @param cost SP 消耗
+     * @return 是否足够
+     */
+    public boolean canUseSkill(int cost) {
+        return this.sp >= cost;
+    }
+
+    /**
+     * 消耗 SP。
+     * @param cost SP 消耗量
+     * @return 是否消耗成功
+     */
+    public boolean consumeSp(int cost) {
+        if (this.sp < cost) {
+            return false;
+        }
+        this.sp -= cost;
+        return true;
     }
 }

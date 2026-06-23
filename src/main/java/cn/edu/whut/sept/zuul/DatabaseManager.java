@@ -77,6 +77,28 @@ public class DatabaseManager
         if (needsMigration) {
             dropSaveRelatedTables(connection);
             System.out.println("检测到旧版存档结构，已自动重建存档相关数据表（旧存档数据已清除）。");
+            return; // 表已删除，由 schema.sql 重建
+        }
+
+        // 优雅添加新列（不删除已有数据）
+        addColumnIfNotExists(connection, "game_save", "gold", "INTEGER NOT NULL DEFAULT 0");
+        addColumnIfNotExists(connection, "player", "gold", "INTEGER NOT NULL DEFAULT 0");
+        addColumnIfNotExists(connection, "player", "password", "TEXT NOT NULL DEFAULT ''");
+        addColumnIfNotExists(connection, "game_save", "game_time", "INTEGER NOT NULL DEFAULT 480");
+        addColumnIfNotExists(connection, "game_save", "day_count", "INTEGER NOT NULL DEFAULT 1");
+    }
+
+    /**
+     * 仅在列不存在时添加列，保护已有数据。
+     */
+    private void addColumnIfNotExists(Connection connection, String tableName,
+                                       String columnName, String columnDef) throws SQLException
+    {
+        if (!columnExists(connection, tableName, columnName)) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("ALTER TABLE " + tableName + " ADD COLUMN "
+                        + columnName + " " + columnDef);
+            }
         }
     }
 

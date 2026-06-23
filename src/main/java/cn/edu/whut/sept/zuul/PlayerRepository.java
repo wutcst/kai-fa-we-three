@@ -27,7 +27,7 @@ public class PlayerRepository
      * @throws SQLException 数据库异常
      * @throws IllegalArgumentException 用户名为空
      */
-    public PlayerRecord createPlayer(String name) throws SQLException
+    public PlayerRecord createPlayer(String name, String password) throws SQLException
     {
         String normalizedName = normalizeName(name);
         if (normalizedName == null) {
@@ -41,18 +41,19 @@ public class PlayerRepository
         String now = Instant.now().toString();
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO player (name, max_weight, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                     "INSERT INTO player (name, max_weight, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
                      Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, normalizedName);
             statement.setDouble(2, DEFAULT_MAX_WEIGHT);
-            statement.setString(3, now);
+            statement.setString(3, password != null ? password : "");
             statement.setString(4, now);
+            statement.setString(5, now);
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     long id = generatedKeys.getLong(1);
-                    return new PlayerRecord(id, normalizedName, DEFAULT_MAX_WEIGHT, now, now);
+                    return new PlayerRecord(id, normalizedName, DEFAULT_MAX_WEIGHT, password != null ? password : "", now, now);
                 }
             }
         } catch (SQLException e) {
@@ -79,7 +80,7 @@ public class PlayerRepository
 
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT id, name, max_weight, created_at, updated_at "
+                     "SELECT id, name, max_weight, password, created_at, updated_at "
                              + "FROM player WHERE name = ?")) {
             statement.setString(1, normalizedName);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -94,7 +95,7 @@ public class PlayerRepository
     /**
      * 登录逻辑：已有玩家直接登录，新玩家自动创建档案。
      */
-    public PlayerLoginResult login(String name) throws SQLException
+    public PlayerLoginResult login(String name, String password) throws SQLException
     {
         String normalizedName = normalizeName(name);
         if (normalizedName == null) {
@@ -102,20 +103,18 @@ public class PlayerRepository
         }
 
         PlayerRecord existingPlayer = findByName(normalizedName);
-        if (existingPlayer != null) {
-            return new PlayerLoginResult(existingPlayer, false);
+        if (existingPlayer == null) {
+            throw new IllegalArgumentException("该用户不存在，请先注册。");
         }
-
-        try {
-            PlayerRecord createdPlayer = createPlayer(normalizedName);
-            return new PlayerLoginResult(createdPlayer, true);
-        } catch (DuplicatePlayerException e) {
-            PlayerRecord player = findByName(normalizedName);
-            if (player != null) {
-                return new PlayerLoginResult(player, false);
-            }
-            throw e;
+        // 已有用户，必须验证密码
+        String storedPassword = existingPlayer.getPassword();
+        if (storedPassword == null || storedPassword.isEmpty()) {
+            throw new IllegalArgumentException("该账号未设置密码，请使用注册功能重新注册。");
         }
+        if (!storedPassword.equals(password)) {
+            throw new IllegalArgumentException("密码错误！");
+        }
+        return new PlayerLoginResult(existingPlayer, false);
     }
 
     private PlayerRecord mapPlayerRecord(ResultSet resultSet) throws SQLException
@@ -124,6 +123,7 @@ public class PlayerRepository
                 resultSet.getLong("id"),
                 resultSet.getString("name"),
                 resultSet.getDouble("max_weight"),
+                resultSet.getString("password") != null ? resultSet.getString("password") : "",
                 resultSet.getString("created_at"),
                 resultSet.getString("updated_at")
         );

@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS player (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     max_weight REAL NOT NULL DEFAULT 10,
+    password TEXT NOT NULL DEFAULT '',
+    gold INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -17,7 +19,26 @@ CREATE TABLE IF NOT EXISTS game_save (
     health INTEGER NOT NULL DEFAULT 100,
     current_weight REAL NOT NULL DEFAULT 0,
     max_weight REAL NOT NULL DEFAULT 10,
+    level INTEGER NOT NULL DEFAULT 1,
+    exp INTEGER NOT NULL DEFAULT 0,
+    atk INTEGER NOT NULL DEFAULT 10,
+    def INTEGER NOT NULL DEFAULT 5,
+    sp INTEGER NOT NULL DEFAULT 50,
+    gold INTEGER NOT NULL DEFAULT 0,
+    game_time INTEGER NOT NULL DEFAULT 480,
+    day_count INTEGER NOT NULL DEFAULT 1,
+    teleport_visits INTEGER NOT NULL DEFAULT 0,
     is_victory INTEGER NOT NULL DEFAULT 0,
+    ending_type_name TEXT DEFAULT '',
+    step_count INTEGER NOT NULL DEFAULT 0,
+    items_collected INTEGER NOT NULL DEFAULT 0,
+    quiz_total INTEGER NOT NULL DEFAULT 0,
+    quiz_correct INTEGER NOT NULL DEFAULT 0,
+    enemies_defeated INTEGER NOT NULL DEFAULT 0,
+    flee_count INTEGER NOT NULL DEFAULT 0,
+    rooms_visited INTEGER NOT NULL DEFAULT 0,
+    npc_affinity_data TEXT DEFAULT '',
+    npc_talked_data TEXT DEFAULT '',
     saved_at TEXT NOT NULL,
     FOREIGN KEY (player_id) REFERENCES player(id) ON DELETE CASCADE,
     UNIQUE(player_id, save_name)
@@ -107,8 +128,11 @@ CREATE TABLE IF NOT EXISTS leaderboard (
     score INTEGER NOT NULL DEFAULT 0,
     health INTEGER NOT NULL DEFAULT 100,
     is_victory INTEGER NOT NULL DEFAULT 0,
+    ending_title TEXT DEFAULT '',
     saved_at TEXT NOT NULL,
     FOREIGN KEY (player_id) REFERENCES player(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC);
+
+

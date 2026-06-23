@@ -52,6 +52,7 @@ public class GameConfig {
         private double defaultMaxWeight = 10;
         private int initialHp = 100;
         private int initialScore = 0;
+        private int initialGold = 0;
 
         public String getDefaultName() {
             return defaultName;
@@ -83,6 +84,14 @@ public class GameConfig {
 
         public void setInitialScore(int initialScore) {
             this.initialScore = initialScore;
+        }
+
+        public int getInitialGold() {
+            return initialGold;
+        }
+
+        public void setInitialGold(int initialGold) {
+            this.initialGold = initialGold;
         }
     }
 }

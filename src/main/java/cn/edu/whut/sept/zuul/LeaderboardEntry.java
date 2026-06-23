@@ -9,17 +9,19 @@ public class LeaderboardEntry {
     private int score;
     private int health;
     private boolean victory;
+    private String endingTitle;
     private String savedAt;
 
     public LeaderboardEntry() {
     }
 
     public LeaderboardEntry(String playerName, int score, int health,
-                            boolean victory, String savedAt) {
+                            boolean victory, String endingTitle, String savedAt) {
         this.playerName = playerName;
         this.score = score;
         this.health = health;
         this.victory = victory;
+        this.endingTitle = endingTitle;
         this.savedAt = savedAt;
     }
 
@@ -53,6 +55,14 @@ public class LeaderboardEntry {
 
     public void setVictory(boolean victory) {
         this.victory = victory;
+    }
+
+    public String getEndingTitle() {
+        return endingTitle;
+    }
+
+    public void setEndingTitle(String endingTitle) {
+        this.endingTitle = endingTitle;
     }
 
     public String getSavedAt() {

@@ -13,16 +13,18 @@ public class EatCommand extends Command {
         boolean success = player.eat(itemName);
 
         if (success) {
-            System.out.println("成功吃掉：" + itemName + "！");
-            if (itemName.equals("cookie")) {
-                System.out.println("魔法饼干生效！最大负重上限+10！");
-                game.setHp(game.getHp() + GameConstants.HP_GAIN_EAT_COOKIE);
-                game.addScore(GameConstants.SCORE_GAIN_COOKIE);
-                game.updateQuestProgress("side_quest_cookie", "completed");
-                System.out.println("生命值+20，分数+15，当前HP：" + game.getHp()
-                        + "，当前分数：" + game.getScore());
+            System.out.println("成功使用：" + itemName + "！");
+            if (itemName.equals("cookie") || itemName.equals("coffee")) {
+                String label=itemName.equals("cookie")?"🍪 魔法饼干":"☕ 咖啡";
+                System.out.println(label+"生效！最大负重上限+5！");
+                game.setHp(game.getHp() + GameConstants.HP_GAIN_EAT_OTHER);
+                if(itemName.equals("cookie")){
+                    game.addScore(GameConstants.SCORE_GAIN_COOKIE);
+                    game.updateQuestProgress("side_quest_cookie", "completed");
+                }
+                System.out.println("当前HP：" + game.getHp()+"，当前负重上限："+player.getMaxWeight()+"kg");
             } else {
-                game.setHp(game.getHp() + GameConstants.HP_GAIN_EAT_OTHER); // 吃其他物品+5HP
+                game.setHp(game.getHp() + GameConstants.HP_GAIN_EAT_OTHER);
                 System.out.println("生命值+5，当前HP：" + game.getHp());
             }
         } else {

@@ -30,7 +30,7 @@ public class SaveRepositoryTest {
             databaseManager.initialize();
             playerRepository = new PlayerRepository(databaseManager);
             saveRepository = new SaveRepository(databaseManager);
-            player = playerRepository.createPlayer("SaveHero");
+            player = playerRepository.createPlayer("SaveHero", "test-password");
         }
     }
 

@@ -51,6 +51,13 @@ public class GameService {
         }
 
         command.setSecondWord(parsedCommand.secondWord);
+        // 支持三词命令（如 login username password）
+        if (command instanceof LoginCommand && parsedCommand.thirdWord != null) {
+            ((LoginCommand) command).setThirdWord(parsedCommand.thirdWord);
+        }
+        if (command instanceof RegisterCommand && parsedCommand.thirdWord != null) {
+            ((RegisterCommand) command).setThirdWord(parsedCommand.thirdWord);
+        }
         String message = captureCommandOutput(command);
         game.checkVictory();
         syncStateFromGame();
@@ -62,6 +69,11 @@ public class GameService {
      *
      * @return current game state
      */
+    public synchronized void setStartTime(int minutes) {
+        game.getWorldState().setGameTimeMinutes(minutes);
+        syncStateFromGame();
+    }
+
     public synchronized GameState getCurrentState() {
         return currentState;
     }
@@ -90,8 +102,10 @@ public class GameService {
         Scanner scanner = new Scanner(input);
         String word = scanner.hasNext() ? scanner.next() : "";
         String secondWord = scanner.hasNext() ? scanner.next() : null;
+        String thirdWord = scanner.hasNext() ? scanner.nextLine().trim() : null;
+        if (thirdWord != null && thirdWord.isEmpty()) thirdWord = null;
         scanner.close();
-        return new ParsedCommand(word, secondWord);
+        return new ParsedCommand(word, secondWord, thirdWord);
     }
 
     private String captureCommandOutput(Command command) {
@@ -117,14 +131,39 @@ public class GameService {
         state.setRoomDescription(game.getCurrentRoom().getLongDescription());
         state.setScore(snapshot.getScore());
         state.setHealth(snapshot.getHealth());
+        state.setMaxHealth(GameConstants.INITIAL_HP);
         state.setCurrentWeight(snapshot.getCurrentWeight());
         state.setMaxWeight(snapshot.getMaxWeight());
         state.setInventoryItems(itemNames(snapshot.getInventoryItems()));
         state.setRoomItems(itemNames(game.getCurrentRoom().getItems()));
         state.setAvailableExits(game.getCurrentRoom().getExitDirections());
         state.setNpcs(game.getCurrentRoom().getNpcNames());
+        state.setLevel(game.getPlayer().getLevel());
+        state.setExp(game.getPlayer().getExp());
+        state.setExpToNext(game.getPlayer().getExpToNextLevel());
+        state.setAtk(game.getPlayer().getAtk());
+        state.setDef(game.getPlayer().getDef());
+        state.setSp(game.getPlayer().getSp());
+        state.setGold(game.getPlayer().getGold());
+        state.setTeleportVisits(game.getTeleportVisits());
+        String endingTitle = game.getEndingType() != null ? game.getEndingType().getTitle() : "";
+        if (!endingTitle.isEmpty()) {
+            endingTitle = game.getPlayer().getLevelTitle() + " · " + endingTitle;
+        }
+        state.setEndingTitle(endingTitle);
+        state.setEndingDesc(game.getEndingType() != null ? game.getEndingType().getDescription() : "");
+        state.setFinalScore(game.getFinalScore());
+        state.setStepCount(game.getStats().stepCount);
+        state.setItemsCollected(game.getStats().itemsCollected);
+        state.setEnemiesDefeated(game.getStats().enemiesDefeated);
         state.setVictory(game.isVictory());
         state.setQuestSummary(game.formatQuestProgress());
+        state.setQuestList(game.getQuestEngine().getQuestSummaryList(
+                game.getQuestProgressMap()));
+        WorldState ws = game.getWorldState();
+        state.setTimeDisplay(ws.getTimeDisplay());
+        state.setTimeOfDay(ws.getTimeOfDay());
+        state.setDayCount(ws.getDayCount());
         state.setLoggedIn(game.isLoggedIn());
         this.currentState = state;
     }
@@ -141,6 +180,17 @@ public class GameService {
     }
 
     /**
+     * 将当前玩家成绩提交到排行榜。
+     */
+    public void joinLeaderboard() {
+        try {
+            game.getSaveService().joinLeaderboard(game);
+        } catch (SaveException e) {
+            // 排行榜提交失败不影响游戏
+        }
+    }
+
+    /**
      * 获取排行榜前 N 名。
      */
     public List<LeaderboardEntry> getLeaderboard(int limit) {
@@ -154,10 +204,12 @@ public class GameService {
     private static class ParsedCommand {
         private final String word;
         private final String secondWord;
+        private final String thirdWord;
 
-        private ParsedCommand(String word, String secondWord) {
+        private ParsedCommand(String word, String secondWord, String thirdWord) {
             this.word = word;
             this.secondWord = secondWord;
+            this.thirdWord = thirdWord;
         }
     }
 }

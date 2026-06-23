@@ -19,10 +19,17 @@ public class CommandWords {
         commands.put("look", new LookCommand());
         commands.put("talk", new TalkCommand());
         commands.put("login", new LoginCommand(playerRepository));
+        commands.put("register", new RegisterCommand(playerRepository));
+        commands.put("logout", new LogoutCommand());
         commands.put("save", new SaveCommand(saveService));
         commands.put("load", new LoadCommand(saveService));
         commands.put("saves", new SavesCommand(saveService));
         commands.put("delete-save", new DeleteSaveCommand(saveService));
+        commands.put("answer", new AnswerCommand());
+        commands.put("combine", new CombineCommand());
+        commands.put("status", new StatusCommand());
+        commands.put("quests", new QuestsCommand());
+        commands.put("buy", new BuyCommand());
     }
 
     public Command get(String word) {

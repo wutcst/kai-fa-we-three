@@ -1,37 +1,55 @@
 # Zuul 闯关冒险游戏
 
-> 软件工程实践（二）小组协同开发项目。项目基于经典文字冒险游戏 World of Zuul 进行扩展，实现了 Web 图形化交互、玩家背包、房间探索、NPC 对话、传送房间、数据库存档、自动化测试和 GitHub Actions 持续集成。
+> 软件工程实践（二）小组协同开发项目。项目基于经典文字冒险游戏 World of Zuul 进行扩展，实现了 Canvas 图形化 Web 界面、RPG 属性与任务系统、NPC 对话与商店、物品合成、SQLite 完整存档、排行榜、自动化测试和 GitHub Actions 持续集成。
 
 ## 项目简介
 
-本项目是一个以“校园探索”为主题的闯关冒险游戏。玩家通过 Web 页面登录游戏，在不同房间之间移动，观察环境、拾取物品、与 NPC 对话、管理背包、保存和读取进度，并最终完成任务物品提交以通关。
+本项目是一个以「校园探索」为主题的闯关冒险游戏 **World of Zuul · Campus Adventure**。玩家通过浏览器注册/登录，在校园各房间之间移动，与 NPC 对话答题、购买道具、收集材料，在实验室合成 **`perfect_report`** 并提交至校门口提交箱，修复校园网络系统并触发多种结局评分。
 
-项目保留了 World of Zuul 原有的命令式游戏核心，同时加入 Spring Boot Web 后端和 Vue 前端页面，使游戏既可以通过浏览器演示，也可以保留控制台运行方式。开发过程采用多人分支协作、Pull Request 合并、JUnit 测试和 GitHub Actions 自动构建，重点体现软件工程实践中的需求拆分、团队协作、版本控制、测试验证和持续集成过程。
+项目保留了 World of Zuul 原有的命令式游戏核心，同时接入 Spring Boot Web 后端与 Vue 3 + Canvas 前端。默认以 Web 方式运行，亦可通过 `--cli` 进入控制台模式。开发过程采用多人分支协作、Pull Request 合并、JUnit 测试和 GitHub Actions 自动构建。
 
 ## 功能特性
 
-- Web 图形化游戏界面：提供场景展示、玩家状态、背包、房间物品、NPC、命令输入和操作日志。
-- 玩家登录：支持玩家名称登录，为后续存档和读档提供用户身份。
-- 房间探索：支持 `go` 命令和快捷移动按钮，在多个房间之间进行探索。
-- 物品系统：房间中可放置多个物品，物品具有名称、描述和重量。
-- 背包系统：玩家可以使用 `take` 和 `drop` 拾取或丢弃物品，并受到最大负重限制。
-- 魔法饼干：玩家可以使用 `eat` 命令食用特殊物品，提高可携带重量。
-- NPC 对话：房间中支持 NPC，玩家可使用 `talk` 命令获取提示信息。
-- 传送房间：部分房间具有随机传送效果，增强游戏不确定性。
-- 回退机制：支持 `back` 命令逐步返回经过的房间。
-- 生命值、分数与胜利判定：游戏具有明确闯关目标和状态反馈。
-- 数据库存档：基于 SQLite 保存玩家、存档、背包、房间物品和任务进度。
-- 自动化测试：覆盖背包、游戏流程、服务接口、数据库、Repository 和存档服务。
-- 持续集成：通过 GitHub Actions 自动执行 Maven 测试和打包。
+### 游戏核心
+
+- **RPG 属性系统**：等级、经验、HP、攻击/防御/SP、金币、负重与步数统计。
+- **房间探索**：6 个校园场景（校门外、剧场、咖啡厅、实验室、办公室、传送室），支持 `go` / `back` 与 WASD 移动。
+- **物品与背包**：拾取/丢弃、超重限制、任务物品 `lockedByNpc` 锁定机制。
+- **食物增益**：食用 `cookie` / `coffee` 各永久 +5kg 最大负重。
+- **NPC 交互**：条件分支对话；管理员/老师答题（`answer`）；咖啡厅商店（`buy`）。
+- **物品合成**：在实验室将 `code_data` + `reference` + `signature` 合成为 `perfect_report`（`combine`）。
+- **传送机制**：传送室随机传送，Lv.2 解锁；Web 端支持夜间时空传送（调整时间 + 随机跳转）。
+- **任务引擎**：`QuestEngine` 驱动主线与支线；`status` / `quests` 查看状态与任务日志。
+- **结局系统**：`EndingCalculator` 根据步数、答题、探索等表现判定 7 种结局类型。
+
+### Web 前端（Canvas + Vue 3）
+
+- **多阶段流程**：`login` → `resume`（有存档时）→ `select`（选角色）→ `time`（选出发时间）→ `playing`。
+- **Canvas 场景**：房间背景图、可点击 NPC/物品、角色行走动画、场景切换过渡。
+- **HUD 状态栏**：时间/天数、EXP/等级、HP、负重、金币；任务、状态、存档、读档快捷按钮。
+- **交互面板**：背包 eat/drop、`campus_map` 全图、`welcome_brochure` 欢迎手册、合成台、商店、答题弹窗、提交箱。
+- **小地图**：拾取 `campus_map` 后显示已探索房间与当前位置。
+- **续玩支持**：老用户登录后可选「继续上次冒险」或「开始新游戏」；Web 端默认使用 `quicksave` 存档名。
+
+### 持久化与账号
+
+- **账号系统**：`register` / `login` / `logout`，密码存储于 SQLite。
+- **完整存档**：保存位置、背包、房间物品、任务进度、RPG 属性、游戏时间、结局与统计数据。
+- **排行榜**：通关后可写入 `leaderboard` 表，前端可通过 API 查询。
+
+### 工程化
+
+- JUnit 4 单元测试覆盖命令、合成、结局、Repository 与存档服务。
+- GitHub Actions 自动执行 `mvn test` 与 `mvn package`。
 
 ## 技术栈
 
 | 模块 | 技术 |
 |---|---|
-| 后端语言 | Java 8 |
+| 后端语言 | Java 17 |
 | Web 框架 | Spring Boot 2.7.18 |
-| 前端页面 | HTML、CSS、JavaScript、Vue 3 CDN |
-| 数据库 | SQLite |
+| 前端页面 | HTML、CSS、JavaScript、Vue 3 CDN、Canvas 2D |
+| 数据库 | SQLite 3 |
 | 数据库访问 | JDBC |
 | 构建工具 | Maven |
 | 测试框架 | JUnit 4 |
@@ -40,7 +58,7 @@
 ## 项目架构
 
 ```text
-浏览器前端
+浏览器前端（Vue 3 + Canvas）
   └── src/main/resources/static/index.html
         │  HTTP/JSON
         ▼
@@ -51,46 +69,48 @@ Web 控制层
 服务层
   └── GameService / SaveService
         │
-        ├── 游戏核心模型：Game、Player、Room、Item、NPC、Command
+        ├── 游戏核心：Game、Player、Room、Item、NPC、CommandWords
+        ├── 子系统：QuestEngine、CraftingManager、WorldState、EndingCalculator
         │
-        └── 持久化层：DatabaseManager、PlayerRepository、SaveRepository、WorldDataRepository
+        └── 持久化：DatabaseManager、PlayerRepository、SaveRepository、
+                    WorldDataRepository、LeaderboardRepository
 ```
 
 ### 分层说明
 
-- 前端交互层：负责展示游戏画面、玩家状态、背包、房间信息和操作日志，并向后端发送命令。
-- 控制器层：通过 REST API 接收前端请求，将命令转交给服务层处理。
-- 服务层：统一管理命令执行、状态封装、游戏重置、保存和读取存档。
-- 游戏模型层：维护玩家、房间、物品、NPC、命令、生命值、分数和胜利状态等核心规则。
-- 持久化层：负责 SQLite 数据库初始化、玩家信息、存档数据和世界配置读写。
-- 测试与 CI 层：通过 JUnit 和 GitHub Actions 验证核心逻辑、服务接口和数据库行为。
+- **前端交互层**：多阶段页面、Canvas 场景渲染、HUD/背包/小地图，将点击与按键转换为 REST 命令。
+- **控制器层**：`/api/game` 下提供状态查询、命令执行、重置、排行榜与时间设置接口。
+- **服务层**：统一封装命令执行、`GameState` 同步、存档读写与排行榜写入。
+- **游戏模型层**：维护玩家、房间、物品、NPC、任务、合成、胜利/死亡与结局判定。
+- **持久化层**：SQLite 建表/迁移、玩家账号、完整快照存档与世界种子数据。
+- **测试与 CI 层**：JUnit 验证核心逻辑与数据库行为，GitHub Actions 保证合并后可构建。
 
 ## 目录结构
 
 ```text
 .
 ├── .github/workflows/maven.yml       # GitHub Actions 自动测试与打包
-├── data/                             # SQLite 数据库文件目录
-├── docs/                             # 项目说明文档
+├── data/                             # SQLite 数据库文件（运行时自动创建）
 ├── src/
 │   ├── main/
 │   │   ├── java/cn/edu/whut/sept/zuul/
-│   │   │   ├── web/                  # Spring Boot REST 控制器
-│   │   │   ├── Game.java             # 游戏核心流程
-│   │   │   ├── GameService.java      # Web 与游戏核心之间的服务层
-│   │   │   ├── Player.java           # 玩家状态与背包
-│   │   │   ├── Room.java             # 房间、出口、物品、NPC
-│   │   │   ├── SaveService.java      # 存档业务逻辑
-│   │   │   └── *Command.java         # 各类游戏命令
+│   │   │   ├── web/GameController.java
+│   │   │   ├── Game.java / GameService.java / GameState.java
+│   │   │   ├── Player.java / Room.java / Item.java / NPC.java
+│   │   │   ├── QuestEngine.java / CraftingManager.java / EndingCalculator.java
+│   │   │   ├── SaveService.java / DatabaseManager.java
+│   │   │   ├── *Repository.java    # 玩家、存档、世界、排行榜
+│   │   │   └── *Command.java         # 20+ 游戏命令
 │   │   └── resources/
-│   │       ├── static/index.html     # Vue 游戏页面
-│   │       ├── static/assets/        # 页面资源
-│   │       └── db/schema.sql         # 数据库建表脚本
+│   │       ├── static/index.html     # Vue + Canvas 游戏页面
+│   │       ├── static/assets/        # 场景/NPC/角色图片资源
+│   │       ├── db/schema.sql         # 数据库建表脚本
+│   │       └── application.properties
 │   └── test/java/cn/edu/whut/sept/zuul/
-│       ├── BagTest.java
-│       ├── GameBasicTest.java
-│       ├── GameServiceTest.java
-│       ├── SaveServiceTest.java
+│       ├── BagTest.java / GameBasicTest.java / GameServiceTest.java
+│       ├── GoCommandTest.java / AnswerCommandTest.java
+│       ├── CraftingManagerTest.java / EndingCalculatorTest.java
+│       ├── DatabaseManagerTest.java / SaveServiceTest.java
 │       └── *RepositoryTest.java
 ├── pom.xml
 ├── README.md
@@ -101,9 +121,9 @@ Web 控制层
 
 ### 环境要求
 
-- JDK 8 或更高版本
+- JDK 17 或更高版本
 - Maven 3.6 或更高版本
-- 现代浏览器
+- 现代浏览器（Chrome / Edge / Firefox 等）
 
 ### 克隆项目
 
@@ -112,7 +132,7 @@ git clone <repository-url>
 cd kai-fa-we-three
 ```
 
-### 启动 Web 版本
+### 启动 Web 版本（默认）
 
 ```bash
 mvn spring-boot:run
@@ -124,50 +144,92 @@ mvn spring-boot:run
 http://localhost:8080
 ```
 
+**Web 端推荐流程**：
+
+1. 注册或登录账号；
+2. 若有存档，选择「继续上次冒险」或「开始新游戏」；
+3. 选择角色形象与出发时间（影响 NPC 出现与氛围）；
+4. 在校门外与保安对话开始任务，探索校园、收集材料、合成并提交 `perfect_report`。
+
 ### 控制台模式
 
-项目保留了原始控制台运行方式，可通过 `--cli` 参数启动：
+保留原始命令行玩法，通过 `--cli` 参数启动：
 
 ```bash
-mvn -q exec:java -Dexec.mainClass=cn.edu.whut.sept.zuul.Main -Dexec.args="--cli"
+mvn spring-boot:run -Dspring-boot.run.arguments="--cli"
 ```
 
-如果当前环境未配置 `exec-maven-plugin`，也可以先打包后运行：
+或打包后运行：
 
 ```bash
 mvn package
 java -jar target/zuul-1.0-SNAPSHOT.jar --cli
 ```
 
+## Web 界面说明
+
+| 区域 | 功能 | 对应命令/API |
+|---|---|---|
+| 登录/续玩 | 注册、登录；有存档时续玩或新游戏 | `register` / `login`；`load quicksave` |
+| HUD 状态栏 | 时间、EXP/等级、HP、负重、金币 | 每次命令后刷新 `GameState` |
+| Canvas 场景 | 背景、NPC/物品点击、WASD 移动 | `go` / `take` / `talk` / `combine` / `drop` / `buy` |
+| 背包栏 | 物品列表、eat/drop | `eat` / `drop` |
+| 小地图/全图 | 探索进度；`campus_map` 查看大地图 | 需拾取 `campus_map` |
+| 合成台 | 实验室合成 `perfect_report` | `combine perfect_report` |
+| 提交箱 | 校门外提交通关物品 | `drop perfect_report` |
+| 设置菜单 | 暂停、重开、退出登录 | `/api/game/reset`、`logout` |
+
 ## 游戏操作说明
+
+### 命令一览
 
 | 命令 | 说明 | 示例 |
 |---|---|---|
-| `login` | 登录或切换玩家 | `login Alice` |
+| `register` | 注册新账号 | `register Alice 123456` |
+| `login` | 登录 | `login Alice 123456` |
+| `logout` | 退出登录 | `logout` |
 | `go` | 向指定方向移动 | `go east` |
-| `look` | 查看当前房间环境 | `look` |
-| `take` | 拾取房间中的物品 | `take key` |
-| `drop` | 丢弃背包中的物品 | `drop key` |
-| `items` | 查看背包和物品信息 | `items` |
-| `eat` | 食用魔法饼干 | `eat cookie` |
-| `talk` | 与 NPC 对话 | `talk teacher` |
 | `back` | 返回上一个房间 | `back` |
-| `save` | 保存当前游戏 | `save default` |
-| `load` | 读取指定存档 | `load default` |
-| `saves` | 查看已有存档 | `saves` |
-| `delete-save` | 删除存档 | `delete-save default` |
+| `look` | 查看当前房间 | `look` |
+| `take` | 拾取物品 | `take keycard` |
+| `drop` | 丢弃/提交物品 | `drop perfect_report` |
+| `items` | 查看背包 | `items` |
+| `eat` | 食用食物 | `eat cookie` |
+| `talk` | 与 NPC 对话 | `talk admin` |
+| `answer` | 回答 NPC 题目 | `answer B` |
+| `combine` | 合成物品 | `combine perfect_report` |
+| `buy` | 在商店购买 | `buy coffee` |
+| `status` | 查看角色状态 | `status` |
+| `quests` | 查看任务日志 | `quests` |
+| `save` | 保存游戏 | `save quicksave` |
+| `load` | 读取存档 | `load quicksave` |
+| `saves` | 列出存档 | `saves` |
+| `delete-save` | 删除存档 | `delete-save quicksave` |
 | `help` | 查看帮助 | `help` |
 | `quit` | 退出控制台游戏 | `quit` |
 
+### 主线流程（简要）
+
+1. 校门外与 **保安** 对话，拾取 `campus_map` 与 `welcome_brochure`；
+2. 到 **办公室** 找 **管理员** 答题，获得 `keycard` 与 `reference`；
+3. 到 **剧场** 找 **老师** 答题，获得 `signature`；
+4. 持 `keycard` 进入 **实验室** 拾取 `code_data`，在合成台合成 `perfect_report`；
+5. 回 **校门外** 向提交箱提交 `perfect_report` 通关。
+
+> 隐藏结局「时空旅者」：多次进入传送室并完成隐藏条件后，与 `perfect_report` 一并提交。
+
 ## API 简介
 
-后端接口位于 `/api/game` 下，前端页面通过 JSON 与后端通信。
+后端接口位于 `/api/game` 下，前端通过 JSON 与后端通信。
 
 | 方法 | 地址 | 说明 |
 |---|---|---|
-| `GET` | `/api/game/state` | 获取当前游戏状态 |
+| `GET` | `/api/game/state` | 获取当前 `GameState` |
 | `POST` | `/api/game/command` | 执行一条游戏命令 |
-| `POST` | `/api/game/reset` | 重置游戏状态 |
+| `POST` | `/api/game/reset` | 重置游戏（新游戏） |
+| `GET` | `/api/game/leaderboard` | 获取排行榜（`?limit=20`） |
+| `POST` | `/api/game/leaderboard/join` | 将当前成绩写入排行榜 |
+| `POST` | `/api/game/time` | 设置出发时间（分钟，如 `480` = 08:00） |
 
 执行命令示例：
 
@@ -177,33 +239,36 @@ curl -X POST http://localhost:8080/api/game/command \
   -d "{\"command\":\"look\"}"
 ```
 
+设置时间示例：
+
+```bash
+curl -X POST http://localhost:8080/api/game/time \
+  -H "Content-Type: application/json" \
+  -d "{\"minutes\":840}"
+```
+
 ## 数据库设计
 
-项目使用 SQLite 保存玩家信息、游戏存档和世界配置。数据库文件默认位于：
+项目使用 SQLite 保存玩家、存档、世界配置与排行榜。数据库文件默认位于：
 
 ```text
 data/zuul.db
 ```
 
-建表脚本位于：
-
-```text
-src/main/resources/db/schema.sql
-```
-
-核心数据表如下：
+建表脚本位于 `src/main/resources/db/schema.sql`，程序启动时由 `DatabaseManager` 自动建表并迁移。
 
 | 表名 | 作用 |
 |---|---|
-| `player` | 保存玩家账号和基础属性 |
-| `game_save` | 保存一次游戏存档的全局状态 |
-| `inventory_item` | 保存玩家背包物品 |
-| `room_item` | 保存各房间剩余物品 |
-| `quest_progress` | 保存任务进度 |
-| `world_room` | 保存初始房间配置 |
-| `world_room_exit` | 保存房间出口关系 |
-| `world_item` | 保存初始物品配置 |
-| `world_room_item` | 保存房间与物品初始关系 |
+| `player` | 玩家账号（名称、密码、金币、负重上限等） |
+| `game_save` | 存档主表（房间、HP/分数/RPG 属性、时间、结局、统计字段） |
+| `inventory_item` | 某次存档中玩家背包物品 |
+| `room_item` | 某次存档中各房间剩余物品 |
+| `quest_progress` | 任务进度键值对 |
+| `world_room` | 世界房间配置 |
+| `world_room_exit` | 房间出口连接 |
+| `world_item` | 物品配置 |
+| `world_room_item` | 房间初始物品关联 |
+| `leaderboard` | 排行榜缓存（分数、HP、结局标题等） |
 
 ## 测试
 
@@ -213,84 +278,47 @@ src/main/resources/db/schema.sql
 mvn test
 ```
 
-主要测试内容：
+主要测试类：
 
-- `BagTest`：验证背包、负重、拾取和丢弃逻辑。
-- `GameBasicTest`：验证基础游戏流程。
-- `GameServiceTest`：验证 Web 服务层命令执行和状态同步。
-- `DatabaseManagerTest`：验证数据库初始化和连接。
-- `PlayerRepositoryTest`：验证玩家数据读写。
-- `SaveRepositoryTest`：验证存档数据读写。
-- `WorldDataRepositoryTest`：验证世界配置加载。
-- `SaveServiceTest`：验证保存、读取和恢复游戏状态。
+| 测试类 | 验证内容 |
+|---|---|
+| `BagTest` / `GameBasicTest` | 背包、负重、基础游戏流程 |
+| `GoCommandTest` / `AnswerCommandTest` | 移动门禁/传送、答题逻辑 |
+| `CraftingManagerTest` / `EndingCalculatorTest` | 合成配方、结局评分 |
+| `GameServiceTest` | REST 服务层命令与状态同步 |
+| `DatabaseManagerTest` | 建表、迁移、目录创建 |
+| `PlayerRepositoryTest` / `SaveRepositoryTest` / `WorldDataRepositoryTest` | 数据读写 |
+| `SaveServiceTest` | 存档完整恢复（位置、背包、任务等） |
 
 ## 持续集成
 
-项目配置了 GitHub Actions 工作流：
+GitHub Actions 工作流：`.github/workflows/maven.yml`
 
-```text
-.github/workflows/maven.yml
-```
-
-触发条件：
-
-- 任意分支 push
-- 向 `master` 发起 Pull Request
-
-流水线步骤：
-
-1. 拉取仓库代码。
-2. 配置 JDK 环境。
-3. 执行 `mvn -B test`。
-4. 执行 `mvn -B package -DskipTests`。
-5. 上传构建生成的 jar 文件。
-
-## 协作开发流程
-
-本项目采用多人 feature 分支开发模式。每位成员在自己的功能分支上完成任务，推送到 GitHub 后通过 Pull Request 合并。
-
-第一轮迭代主要分支：
-
-- `feature/player-item`：玩家、物品、背包、魔法饼干。
-- `feature/room-npc`：房间、传送房间、NPC 对话。
-- `shenyang`：命令系统、回退、生命值、分数和胜利规则。
-
-第二轮迭代主要分支：
-
-- `database`：SQLite 数据库、存档、世界配置持久化。
-- `feature/test-ci`：JUnit 测试、Maven 构建、GitHub Actions。
-- `feature/ui-rewrite`：Spring Boot Web 接口和 Vue 前端页面。
-
-合并原则：
-
-- 每个成员先在个人分支完成本地自测。
-- 推送后通过 Pull Request 进行集成。
-- 合并前检查冲突、接口影响和测试结果。
-- CI 通过后再合入主分支。
+- 触发：任意分支 push、向 `master` 发起 Pull Request
+- 步骤：配置 JDK → `mvn -B test` → `mvn -B package -DskipTests` → 上传 jar
 
 ## 小组分工
 
 | 成员 | 主要任务 |
 |---|---|
-| 成员一 | 玩家模型、物品与背包、魔法饼干、Web 前端页面与交互设计 |
-| 成员二 | 房间系统、传送房间、NPC 对话、SQLite 数据库与存档表设计 |
-| 成员三 | 命令系统、游戏规则、生命值与胜利条件、测试体系与持续集成 |
+| 时宝晗 | Player/Item 背包、RPG 属性、Canvas + Vue 前端与续玩交互 |
+| 罗雨婧 | Room/TeleportRoom/NPC/Shop、SQLite 数据库与 Repository 存档 |
+| 沈杨 | CommandWords 命令集成、Quest/Crafting/Ending 规则、测试与 CI |
 
 ## 项目亮点
 
-- 在原有命令行游戏基础上完成 Web 化改造，同时保留 CLI 模式。
-- 使用统一 `GameState` 解决前后端状态同步问题。
-- 存档不仅保存玩家位置，还保存背包、房间物品、任务进度等完整游戏状态。
-- 通过 JUnit 测试和 GitHub Actions 保证核心逻辑在合并后仍可运行。
-- 通过两轮迭代体现了需求分析、任务分工、分支协作、代码集成和项目交付过程。
+- 命令行核心完整保留，并升级为 Canvas 可视化 Web 体验，同时支持 CLI 模式。
+- 统一 `GameState` 驱动前后端状态同步，Web 点击/WASD 均转换为后端命令。
+- 存档覆盖 RPG 属性、房间物品、任务进度与统计数据，支持登录后一键续玩。
+- 主线合成 + 多结局评分 + 排行榜，形成完整闯关闭环。
+- JUnit 与 GitHub Actions 保证核心逻辑在协作合并后仍可构建运行。
 
 ## 后续改进方向
 
-- 将前端页面进一步拆分为组件，提高可维护性。
-- 增加更多关卡、NPC 行为和任务线。
-- 补充接口测试和前端自动化测试。
-- 对数据库访问层进行进一步抽象，减少重复 JDBC 代码。
-- 增加部署脚本或 Docker 配置，方便在不同环境中运行。
+- 将 `index.html` 拆分为 Vue 组件工程，提升前端可维护性。
+- 补充 REST 接口测试与前端 E2E 测试。
+- 增加更多关卡、NPC 行为与支线任务。
+- 提供 Docker 或一键部署脚本，简化演示环境搭建。
 
 ## 许可证
 

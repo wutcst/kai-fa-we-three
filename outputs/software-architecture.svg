@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#08162f"/>
+      <stop offset="1" stop-color="#102b56"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#142f5e"/>
+      <stop offset="1" stop-color="#0d2145"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#f3b43c"/>
+    </marker>
+    <style>
+      .title { font: 700 44px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #f6f9ff; }
+      .subtitle { font: 400 22px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #b9c7dc; }
+      .layer-title { font: 700 26px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #f3b43c; }
+      .box-title { font: 700 23px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #ffffff; }
+      .box-text { font: 400 18px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #dce8ff; }
+      .small { font: 400 16px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #c5d4ec; }
+      .tag { font: 700 16px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #08162f; }
+      .arrow-label { font: 700 17px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #f3b43c; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1600" height="84" fill="#061126"/>
+  <rect x="0" y="84" width="1600" height="5" fill="#f3b43c"/>
+
+  <text x="70" y="56" class="title">World of Zuul 软件架构图</text>
+  <text x="70" y="118" class="subtitle">前端只负责展示与交互，后端统一执行游戏规则，数据库保存玩家、世界、存档与成绩</text>
+
+  <!-- Main architecture frame -->
+  <rect x="70" y="165" width="1460" height="570" rx="22" fill="#081a38" stroke="#315f9b" stroke-width="2" opacity="0.95"/>
+
+  <!-- Layer labels -->
+  <text x="95" y="217" class="layer-title">表现层</text>
+  <text x="95" y="337" class="layer-title">接口层</text>
+  <text x="95" y="457" class="layer-title">服务层</text>
+  <text x="95" y="577" class="layer-title">领域层</text>
+  <text x="95" y="697" class="layer-title">数据层</text>
+
+  <!-- Frontend -->
+  <g filter="url(#shadow)">
+    <rect x="235" y="185" width="1070" height="82" rx="16" fill="url(#panel)" stroke="#3f80c8"/>
+    <text x="265" y="220" class="box-title">Vue 3 前端页面</text>
+    <text x="265" y="248" class="box-text">LoginPage / TopHUD / GameCanvas / Inventory / Minimap / CommandInput / Overlays</text>
+    <rect x="1125" y="204" width="150" height="34" rx="17" fill="#f3b43c"/>
+    <text x="1150" y="227" class="tag">浏览器访问</text>
+  </g>
+
+  <!-- Controller -->
+  <g filter="url(#shadow)">
+    <rect x="235" y="305" width="1070" height="82" rx="16" fill="url(#panel)" stroke="#3f80c8"/>
+    <text x="265" y="340" class="box-title">Spring Boot REST 接口层：GameController</text>
+    <text x="265" y="368" class="box-text">GET /api/game/state　POST /api/game/command　POST /api/game/reset　GET /api/game/leaderboard</text>
+  </g>
+
+  <!-- Service -->
+  <g filter="url(#shadow)">
+    <rect x="235" y="425" width="1070" height="82" rx="16" fill="url(#panel)" stroke="#3f80c8"/>
+    <text x="265" y="460" class="box-title">服务层：GameService / SaveService</text>
+    <text x="265" y="488" class="box-text">解析命令、调用 Command、同步 GameState、保存/读取存档、提交排行榜</text>
+  </g>
+
+  <!-- Domain boxes -->
+  <g filter="url(#shadow)">
+    <rect x="235" y="545" width="250" height="82" rx="16" fill="#15386c" stroke="#3f80c8"/>
+    <text x="265" y="580" class="box-title">Command 命令</text>
+    <text x="265" y="608" class="box-text">go / take / talk / answer</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="505" y="545" width="250" height="82" rx="16" fill="#15386c" stroke="#3f80c8"/>
+    <text x="535" y="580" class="box-title">游戏核心模型</text>
+    <text x="535" y="608" class="box-text">Game / Player / Room / Item</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="775" y="545" width="250" height="82" rx="16" fill="#15386c" stroke="#3f80c8"/>
+    <text x="805" y="580" class="box-title">任务与合成</text>
+    <text x="805" y="608" class="box-text">QuestEngine / CraftingManager</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="1045" y="545" width="260" height="82" rx="16" fill="#15386c" stroke="#3f80c8"/>
+    <text x="1075" y="580" class="box-title">结局与排行</text>
+    <text x="1075" y="608" class="box-text">EndingCalculator / Leaderboard</text>
+  </g>
+
+  <!-- Data -->
+  <g filter="url(#shadow)">
+    <rect x="235" y="665" width="1070" height="82" rx="16" fill="url(#panel)" stroke="#3f80c8"/>
+    <text x="265" y="700" class="box-title">SQLite 持久化层</text>
+    <text x="265" y="728" class="box-text">player / game_save / inventory_item / room_item / quest_progress / world_* / leaderboard / crafting_recipe</text>
+  </g>
+
+  <!-- Arrows -->
+  <line x1="770" y1="267" x2="770" y2="305" stroke="#f3b43c" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="790" y="294" class="arrow-label">HTTP / JSON</text>
+  <line x1="770" y1="387" x2="770" y2="425" stroke="#f3b43c" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="790" y="414" class="arrow-label">CommandRequest</text>
+  <line x1="770" y1="507" x2="770" y2="545" stroke="#f3b43c" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="790" y="534" class="arrow-label">执行游戏规则</text>
+  <line x1="770" y1="627" x2="770" y2="665" stroke="#f3b43c" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="790" y="654" class="arrow-label">存档 / 查询</text>
+
+  <!-- Return state arrow -->
+  <path d="M1320 465 C1460 465, 1460 225, 1305 225" fill="none" stroke="#66d3ff" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="1338" y="352" class="arrow-label" fill="#66d3ff">GameState 返回前端刷新界面</text>
+
+  <!-- Support area -->
+  <rect x="70" y="770" width="1460" height="90" rx="20" fill="#07152d" stroke="#315f9b" stroke-width="2"/>
+  <text x="105" y="810" class="layer-title">工程支撑</text>
+  <text x="245" y="805" class="box-title">Maven 构建</text>
+  <text x="245" y="833" class="small">mvn test / mvn package</text>
+  <text x="520" y="805" class="box-title">JUnit 测试</text>
+  <text x="520" y="833" class="small">模型、服务、数据库、存档回归验证</text>
+  <text x="850" y="805" class="box-title">GitHub Actions</text>
+  <text x="850" y="833" class="small">push / PR 自动测试、打包、上传 jar</text>
+  <text x="1220" y="805" class="box-title">发布部署</text>
+  <text x="1220" y="833" class="small">http://localhost:8080 或 jar 运行</text>
+</svg>
